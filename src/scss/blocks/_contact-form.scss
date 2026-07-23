@@ -15,6 +15,11 @@
   gap: get-size('500');
 }
 
+.contactForm[hidden],
+.contactFormStatus[hidden] {
+  display: none;
+}
+
 .contactForm__field {
   display: grid;
   gap: get-size('200');
@@ -52,6 +57,35 @@
 .contactForm__error a,
 .contactFormStatus a {
   color: currentColor;
+}
+
+[data-contact-form-submit] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: get-size('200');
+}
+
+.contactForm[aria-busy='true'] [data-contact-form-submit]::before {
+  width: 1em;
+  height: 1em;
+  border: 0.15em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  content: '';
+  animation: contactFormSpinner 0.75s linear infinite;
+}
+
+@keyframes contactFormSpinner {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contactForm[aria-busy='true'] [data-contact-form-submit]::before {
+    animation: none;
+  }
 }
 
 .contactFormStatus > * + * {
