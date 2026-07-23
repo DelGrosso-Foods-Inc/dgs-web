@@ -13,6 +13,11 @@
   var submitButton = form.querySelector('[data-contact-form-submit]')
   var errorMessage = form.querySelector('[data-contact-form-error]')
   var successMessage = document.querySelector('[data-contact-form-success]')
+  var submissionEndpoint = form.getAttribute('data-contact-form-endpoint')
+
+  if (!submissionEndpoint) {
+    return
+  }
 
   form.addEventListener('submit', function (event) {
     var submission = {}
@@ -29,7 +34,7 @@
     submitButton.textContent = 'Sending…'
     form.setAttribute('aria-busy', 'true')
 
-    window.fetch(form.action, {
+    window.fetch(submissionEndpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
