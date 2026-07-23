@@ -15,4 +15,8 @@
 
   {{contentSections(sitePage.content.sectionsTop)}}
 
+  {% if sitePage.content.slug.current == 'contact' %}
+    {% include "sections/contact-form.html" %}
+  {% endif %}
+
 {% endblock %}

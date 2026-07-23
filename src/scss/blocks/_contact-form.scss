@@ -1,0 +1,66 @@
+.contactFormSection {
+  font-size: get-size('400');
+}
+
+.contactForm,
+.contactFormStatus {
+  padding: get-size('600');
+  border-radius: 0.25rem;
+  color: get-color('dark');
+  background: get-color('light-glare');
+}
+
+.contactForm {
+  display: grid;
+  gap: get-size('500');
+}
+
+.contactForm__field {
+  display: grid;
+  gap: get-size('200');
+}
+
+.contactForm__field label {
+  font-weight: 700;
+}
+
+.contactForm__field input,
+.contactForm__field textarea {
+  width: 100%;
+  padding: get-size('300');
+  border: 2px solid get-color('muted');
+  border-radius: 0.25rem;
+  color: get-color('dark');
+  background: get-color('light-glare');
+}
+
+.contactForm__field textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.contactForm__required,
+.contactForm__error {
+  color: get-color('accent-shade');
+}
+
+.contactForm__error {
+  margin: 0;
+  font-weight: 700;
+}
+
+.contactForm__error a,
+.contactFormStatus a {
+  color: currentColor;
+}
+
+.contactFormStatus > * + * {
+  margin-top: get-size('500');
+}
+
+@include media-query('md') {
+  .contactForm,
+  .contactFormStatus {
+    padding: get-size('700');
+  }
+}
