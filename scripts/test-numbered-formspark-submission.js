@@ -32,6 +32,17 @@ async function runTest (name, test) {
   }
 }
 
+async function withMutedConsoleError (test) {
+  const originalConsoleError = console.error
+  console.error = () => {}
+
+  try {
+    await test()
+  } finally {
+    console.error = originalConsoleError
+  }
+}
+
 async function main () {
   await runTest('returns JSON after a JavaScript submission succeeds', async () => {
     let forwardedSubmission
@@ -114,10 +125,7 @@ async function main () {
   })
 
   await runTest('redirects when Formspark rejects a URL-encoded submission', async () => {
-    const originalConsoleError = console.error
-    console.error = () => {}
-
-    try {
+    await withMutedConsoleError(async () => {
       const handler = createNumberedFormsparkHandler(handlerOptions, {
         allocateSubmissionId: () => Promise.resolve(45),
         forwardSubmission: () => Promise.reject(new Error('Formspark failed'))
@@ -137,17 +145,13 @@ async function main () {
         },
         body: ''
       })
-    } finally {
-      console.error = originalConsoleError
-    }
+    })
   })
 
   await runTest('delivers without an ID when Upstash is unavailable', async () => {
-    const originalConsoleError = console.error
     let forwardedSubmissionId
-    console.error = () => {}
 
-    try {
+    await withMutedConsoleError(async () => {
       const handler = createNumberedFormsparkHandler(handlerOptions, {
         allocateSubmissionId: () => Promise.reject(new Error('Upstash failed')),
         forwardSubmission: (submission, submissionId) => {
@@ -171,9 +175,7 @@ async function main () {
         body: JSON.stringify({ submissionId: null })
       })
       assert.strictEqual(forwardedSubmissionId, null)
-    } finally {
-      console.error = originalConsoleError
-    }
+    })
   })
 
   await runTest('rejects unsupported submission content types', async () => {
