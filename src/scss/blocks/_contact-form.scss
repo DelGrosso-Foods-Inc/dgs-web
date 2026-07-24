@@ -59,14 +59,14 @@
   color: currentColor;
 }
 
-[data-contact-form-submit] {
+[data-formspark-form-submit] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: get-size('200');
 }
 
-.contactForm[aria-busy='true'] [data-contact-form-submit]::before {
+.contactForm[aria-busy='true'] [data-formspark-form-submit]::before {
   width: 1em;
   height: 1em;
   border: 0.15em solid currentColor;
@@ -83,7 +83,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .contactForm[aria-busy='true'] [data-contact-form-submit]::before {
+  .contactForm[aria-busy='true'] [data-formspark-form-submit]::before {
     animation: none;
   }
 }

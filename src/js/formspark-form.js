@@ -1,6 +1,6 @@
 (function () {
   var submissionTimeoutMs = 30000
-  var form = document.querySelector('[data-contact-form]')
+  var form = document.querySelector('[data-formspark-form]')
 
   if (
     !form ||
@@ -11,15 +11,18 @@
     return
   }
 
-  var submitButton = form.querySelector('[data-contact-form-submit]')
-  var errorMessage = form.querySelector('[data-contact-form-error]')
-  var progressMessage = document.querySelector('[data-contact-form-progress]')
-  var successMessage = document.querySelector('[data-contact-form-success]')
-  var submissionEndpoint = form.getAttribute('data-contact-form-endpoint')
+  var submitButton = form.querySelector('[data-formspark-form-submit]')
+  var errorMessage = form.querySelector('[data-formspark-form-error]')
+  var progressMessage = document.querySelector('[data-formspark-form-progress]')
+  var successMessage = document.querySelector('[data-formspark-form-success]')
+  var submissionEndpoint = form.getAttribute('data-formspark-form-endpoint')
+  var progressText = form.getAttribute('data-formspark-form-progress-message')
 
-  if (!submissionEndpoint) {
+  if (!submitButton || !errorMessage || !successMessage || !submissionEndpoint) {
     return
   }
+
+  var submitButtonText = submitButton.textContent.trim()
 
   form.addEventListener('submit', function (event) {
     var submission = {}
@@ -36,7 +39,7 @@
     submitButton.textContent = 'Sending…'
     form.setAttribute('aria-busy', 'true')
     if (progressMessage) {
-      progressMessage.textContent = 'Sending your message.'
+      progressMessage.textContent = progressText || 'Sending your form.'
     }
 
     var abortController = window.AbortController
@@ -81,7 +84,7 @@
       errorMessage.hidden = false
       errorMessage.focus()
       submitButton.disabled = false
-      submitButton.textContent = 'Submit'
+      submitButton.textContent = submitButtonText
     }).then(function () {
       window.clearTimeout(timeoutId)
       form.removeAttribute('aria-busy')

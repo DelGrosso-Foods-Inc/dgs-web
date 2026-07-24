@@ -7,9 +7,14 @@
         class="contactForm"
         action="{{ formspark.contactFormAction }}"
         method="post"
-        data-contact-form
-        data-contact-form-endpoint="/.netlify/functions/contact"
+        data-formspark-form
+        data-formspark-form-endpoint="/.netlify/functions/contact"
+        data-formspark-form-progress-message="Sending your message."
       >
+        <input type="hidden" name="_redirect" value="https://www.delgrossos.com/contact/">
+        <input type="hidden" name="_append" value="false">
+        <input type="hidden" name="_email.subject" value="DelGrossos.com - Contact">
+
         <div class="contactForm__field">
           <label for="contact-first-name">
             First Name <span class="contactForm__required" aria-hidden="true">*</span>
@@ -62,7 +67,7 @@
           ></textarea>
         </div>
 
-        <p class="contactForm__error" data-contact-form-error role="alert" tabindex="-1" hidden>
+        <p class="contactForm__error" data-formspark-form-error role="alert" tabindex="-1" hidden>
           Sorry, we couldn’t send your message. Please call our office at
           <a href="tel:1-800-521-5880">1-800-521-5880</a>.
         </p>
@@ -70,7 +75,7 @@
         <button
           class="button button--colored-bg button--color-accent"
           type="submit"
-          data-contact-form-submit
+          data-formspark-form-submit
         >
           Submit
         </button>
@@ -78,7 +83,7 @@
 
       <p
         class="visually-hidden"
-        data-contact-form-progress
+        data-formspark-form-progress
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -86,7 +91,7 @@
 
       <div
         class="contactFormStatus"
-        data-contact-form-success
+        data-formspark-form-success
         role="status"
         tabindex="-1"
         hidden
@@ -105,4 +110,4 @@
   </div>
 </section>
 
-<script src="/js/contact-form.js" defer></script>
+<script src="/js/formspark-form.js" defer></script>

@@ -19,4 +19,8 @@
     {% include "sections/contact-form.html" %}
   {% endif %}
 
+  {% if sitePage.content.slug.current == 'anonymous-report' %}
+    {% include "sections/anonymous-report-form.html" %}
+  {% endif %}
+
 {% endblock %}
