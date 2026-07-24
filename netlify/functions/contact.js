@@ -22,6 +22,10 @@ exports.handler = createNumberedFormsparkHandler({
   actionUrlEnvironmentVariable: 'FORMSPARK_ACTION_URL',
   counterKey: 'dgs-web:contact:submission-sequence',
   defaultActionUrl: 'https://submit-form.com/JRcw7QpWr',
+  errorRedirectPath: '/contact/#submission-error',
   normalizeSubmission,
-  subject: submissionId => `DelGrossos.com - Contact [ID:${submissionId}]`
+  subject: submissionId => (
+    `DelGrossos.com - Contact [ID:${submissionId || 'UNAVAILABLE'}]`
+  ),
+  successRedirectPath: '/form-submitted/'
 })

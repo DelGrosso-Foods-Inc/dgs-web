@@ -50,8 +50,14 @@
 }
 
 .contactForm__error {
+  display: none;
   margin: 0;
   font-weight: 700;
+}
+
+.contactForm__error:target,
+.contactForm__error.is-visible {
+  display: block;
 }
 
 .contactForm__error a,

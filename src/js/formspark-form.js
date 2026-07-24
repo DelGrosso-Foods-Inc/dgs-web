@@ -15,10 +15,9 @@
   var errorMessage = form.querySelector('[data-formspark-form-error]')
   var progressMessage = document.querySelector('[data-formspark-form-progress]')
   var successMessage = document.querySelector('[data-formspark-form-success]')
-  var submissionEndpoint = form.getAttribute('data-formspark-form-endpoint')
   var progressText = form.getAttribute('data-formspark-form-progress-message')
 
-  if (!submitButton || !errorMessage || !successMessage || !submissionEndpoint) {
+  if (!submitButton || !errorMessage || !successMessage || !form.action) {
     return
   }
 
@@ -34,7 +33,7 @@
 
     event.preventDefault()
 
-    errorMessage.hidden = true
+    errorMessage.classList.remove('is-visible')
     submitButton.disabled = true
     submitButton.textContent = 'Sending…'
     form.setAttribute('aria-busy', 'true')
@@ -70,7 +69,7 @@
     })
 
     window.Promise.race([
-      window.fetch(submissionEndpoint, requestOptions),
+      window.fetch(form.action, requestOptions),
       timeout
     ]).then(function (response) {
       if (!response.ok) {
@@ -81,7 +80,7 @@
       successMessage.hidden = false
       successMessage.focus()
     }).catch(function () {
-      errorMessage.hidden = false
+      errorMessage.classList.add('is-visible')
       errorMessage.focus()
       submitButton.disabled = false
       submitButton.textContent = submitButtonText

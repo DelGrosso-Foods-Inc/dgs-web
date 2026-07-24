@@ -10,6 +10,66 @@ function jsonResponse (statusCode, body) {
   }
 }
 
+function redirectResponse (location) {
+  return {
+    statusCode: 303,
+    headers: {
+      Location: location
+    },
+    body: ''
+  }
+}
+
+function getContentType (headers = {}) {
+  const headerName = Object.keys(headers).find(name => (
+    name.toLowerCase() === 'content-type'
+  ))
+
+  return headerName
+    ? headers[headerName].split(';')[0].trim().toLowerCase()
+    : ''
+}
+
+function parseSubmission (event) {
+  const contentType = getContentType(event.headers)
+
+  if (contentType === 'application/json') {
+    return {
+      responseType: 'json',
+      submission: JSON.parse(event.body || '')
+    }
+  }
+
+  if (contentType === 'application/x-www-form-urlencoded') {
+    const submission = {}
+
+    new URLSearchParams(event.body || '').forEach((value, name) => {
+      submission[name] = value
+    })
+
+    return {
+      responseType: 'redirect',
+      submission
+    }
+  }
+
+  return {
+    responseType: 'json',
+    submission: null,
+    unsupported: true
+  }
+}
+
+function submissionErrorResponse (responseType, options, statusCode = 400) {
+  return responseType === 'redirect'
+    ? redirectResponse(options.errorRedirectPath)
+    : jsonResponse(statusCode, {
+      error: statusCode === 400
+        ? 'Invalid submission'
+        : 'Unable to submit form'
+    })
+}
+
 function postJson (urlString, headers, payload) {
   const body = JSON.stringify(payload)
   const url = new URL(urlString)
@@ -99,7 +159,14 @@ function forwardSubmission (options, submission, submissionId) {
   })
 }
 
-function createNumberedFormsparkHandler (options) {
+function createNumberedFormsparkHandler (options, dependencies = {}) {
+  const allocateId = dependencies.allocateSubmissionId || (() => (
+    allocateSubmissionId(options.counterKey)
+  ))
+  const forward = dependencies.forwardSubmission || ((submission, submissionId) => (
+    forwardSubmission(options, submission, submissionId)
+  ))
+
   return event => {
     if (event.httpMethod !== 'POST') {
       const response = jsonResponse(405, { error: 'Method not allowed' })
@@ -107,12 +174,18 @@ function createNumberedFormsparkHandler (options) {
       return response
     }
 
-    let body
+    let parsedSubmission
 
     try {
-      body = JSON.parse(event.body || '')
+      parsedSubmission = parseSubmission(event)
     } catch (error) {
       return jsonResponse(400, { error: 'Invalid submission' })
+    }
+
+    const body = parsedSubmission.submission
+
+    if (parsedSubmission.unsupported) {
+      return jsonResponse(415, { error: 'Unsupported media type' })
     }
 
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -122,16 +195,25 @@ function createNumberedFormsparkHandler (options) {
     const submission = options.normalizeSubmission(body)
 
     if (!submission) {
-      return jsonResponse(400, { error: 'Invalid submission' })
+      return submissionErrorResponse(parsedSubmission.responseType, options)
     }
 
-    return allocateSubmissionId(options.counterKey).then(submissionId => (
-      forwardSubmission(options, submission, submissionId).then(() => (
-        jsonResponse(200, { submissionId })
+    return allocateId().catch(() => {
+      console.error('Submission counter unavailable')
+      return null
+    }).then(submissionId => (
+      forward(submission, submissionId).then(() => (
+        parsedSubmission.responseType === 'redirect'
+          ? redirectResponse(options.successRedirectPath)
+          : jsonResponse(200, { submissionId })
       ))
-    )).catch(error => {
-      console.error(error.message)
-      return jsonResponse(502, { error: 'Unable to submit form' })
+    )).catch(() => {
+      console.error('Formspark submission failed')
+      return submissionErrorResponse(
+        parsedSubmission.responseType,
+        options,
+        502
+      )
     })
   }
 }

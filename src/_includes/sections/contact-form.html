@@ -5,16 +5,11 @@
 
       <form
         class="contactForm"
-        action="{{ formspark.contactFormAction }}"
+        action="/.netlify/functions/contact"
         method="post"
         data-formspark-form
-        data-formspark-form-endpoint="/.netlify/functions/contact"
         data-formspark-form-progress-message="Sending your message."
       >
-        <input type="hidden" name="_redirect" value="https://www.delgrossos.com/contact/">
-        <input type="hidden" name="_append" value="false">
-        <input type="hidden" name="_email.subject" value="DelGrossos.com - Contact">
-
         <div class="contactForm__field">
           <label for="contact-first-name">
             First Name <span class="contactForm__required" aria-hidden="true">*</span>
@@ -67,7 +62,13 @@
           ></textarea>
         </div>
 
-        <p class="contactForm__error" data-formspark-form-error role="alert" tabindex="-1" hidden>
+        <p
+          class="contactForm__error"
+          id="submission-error"
+          data-formspark-form-error
+          role="alert"
+          tabindex="-1"
+        >
           Sorry, we couldn’t send your message. Please call our office at
           <a href="tel:1-800-521-5880">1-800-521-5880</a>.
         </p>

@@ -1,0 +1,24 @@
+{% extends "layouts/base.html" %}
+{% set pageCriticalStyles = ['css/page.css'] %}
+
+{% from 'components/page-header.html' import pageHeader %}
+
+{% block seo %}
+  <title>Form submitted | {{ siteSettings.title }}</title>
+  <meta name="description" content="Your form was submitted successfully.">
+  <meta name="robots" content="noindex, follow">
+{% endblock %}
+
+{% block content %}
+  <div class="narrow">
+    {{ pageHeader(title='Your form was submitted successfully.') }}
+  </div>
+
+  <section class="[ gap-top-600 gap-bottom-600 md:gap-top-xl md:gap-bottom-xl ]">
+    <div class="wrapper">
+      <div class="[ mx-auto lg:measure-long flow ]">
+        <p><a href="/">Return to the homepage</a>.</p>
+      </div>
+    </div>
+  </section>
+{% endblock %}

@@ -3,24 +3,11 @@
     <div class="measure-long" style="margin:0 auto;">
       <form
         class="contactForm"
-        action="{{ formspark.anonymousReportFormAction }}"
+        action="/.netlify/functions/anonymous-report"
         method="post"
         data-formspark-form
-        data-formspark-form-endpoint="/.netlify/functions/anonymous-report"
         data-formspark-form-progress-message="Sending your anonymous report."
       >
-        <input
-          type="hidden"
-          name="_redirect"
-          value="https://www.delgrossos.com/anonymous-report/"
-        >
-        <input type="hidden" name="_append" value="false">
-        <input
-          type="hidden"
-          name="_email.subject"
-          value="DelGrossos.com - Anonymous Report"
-        >
-
         <h2 id="anonymous-report-form-title">
           Anonymously send information to DelGrosso Foods Inc. Human Resources.
         </h2>
@@ -45,10 +32,10 @@
 
         <p
           class="contactForm__error"
+          id="submission-error"
           data-formspark-form-error
           role="alert"
           tabindex="-1"
-          hidden
         >
           Sorry, we couldn’t send your anonymous report. Please try again.
         </p>

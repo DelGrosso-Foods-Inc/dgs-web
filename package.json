@@ -6,7 +6,8 @@
   "scripts": {
     "start": "npx gulp && concurrently \"npx gulp watch\" \"npx eleventy --serve\"",
     "production": "NODE_ENV=production npx gulp && NODE_ENV=production npx eleventy",
-    "production-win": "SET NODE_ENV=production & npx gulp && SET NODE_ENV=production & npx eleventy"
+    "production-win": "SET NODE_ENV=production & npx gulp && SET NODE_ENV=production & npx eleventy",
+    "test:forms": "node scripts/test-numbered-formspark-submission.js"
   },
   "keywords": [],
   "author": "",
