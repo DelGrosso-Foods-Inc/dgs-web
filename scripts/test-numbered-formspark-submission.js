@@ -107,13 +107,15 @@ async function main () {
       allocateSubmissionId: () => Promise.resolve(44),
       forwardSubmission: () => Promise.resolve()
     })
-    const response = await handler({
+    const responsePromise = handler({
       body: 'message=',
       headers: {
         'content-type': 'application/x-www-form-urlencoded'
       },
       httpMethod: 'POST'
     })
+    assert.strictEqual(typeof responsePromise.then, 'function')
+    const response = await responsePromise
 
     assert.deepStrictEqual(response, {
       statusCode: 303,

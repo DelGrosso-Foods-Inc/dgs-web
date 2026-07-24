@@ -167,7 +167,7 @@ function createNumberedFormsparkHandler (options, dependencies = {}) {
     forwardSubmission(options, submission, submissionId)
   ))
 
-  return event => {
+  return async event => {
     if (event.httpMethod !== 'POST') {
       const response = jsonResponse(405, { error: 'Method not allowed' })
       response.headers.Allow = 'POST'
