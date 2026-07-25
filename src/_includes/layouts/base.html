@@ -3,7 +3,134 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script type="text/javascript" src="https://embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js"></script>
+    <script type="text/javascript">
+var _iub = _iub || [];
+_iub.csConfiguration = {"askConsentAtCookiePolicyUpdate":true,"cookiePolicyInOtherWindow":true,"emailMarketing":{"theme":"dark"},"enableGdpr":false,"enableUspr":true,"floatingPreferencesButtonDisplay":"bottom-right","hasEmailMarketing":false,"logLevel":"warn","promptToAcceptOnBlockedElements":true,"siteId":4606514,"storage":{"useSiteId":true},"usPreferencesWidgetDisplay":"inline-left","usprApplies":true,"whitelabel":true,"cookiePolicyId":35923895,"floatingPreferencesButtonCaption":true,"banner":{"acceptButtonCaptionColor":"#FFFFFF","acceptButtonColor":"#891703","acceptButtonDisplay":true,"backgroundColor":"#F9F9F8","backgroundOverlay":true,"closeButtonDisplay":false,"continueWithoutAcceptingButtonCaptionColor":"#000000","continueWithoutAcceptingButtonColor":"#E1E1E1","customizeButtonCaptionColor":"#000000","customizeButtonColor":"#E1E1E1","customizeButtonDisplay":true,"linksColor":"#891703","position":"bottom","prependOnBody":true,"rejectButtonCaptionColor":"#FFFFFF","rejectButtonColor":"#891703","rejectButtonDisplay":true,"showTitle":false,"showTotalNumberOfProviders":true,"textColor":"#000000","theme":"asphalt-neutral"}};
+    </script>
+    <script type="text/javascript">
+      (function() {
+        var measurementId = 'G-0T1NQBVXXP';
+        var disableProperty = 'ga-disable-' + measurementId;
+        var analyticsAllowed = false;
+        var analyticsLoaded = false;
+        var analyticsLoading = false;
+
+        window[disableProperty] = true;
+
+        function deleteAnalyticsCookies() {
+          var hostname = window.location.hostname;
+          var hostnameParts = hostname.split('.');
+          var baseDomain = hostnameParts.length > 1
+            ? '.' + hostnameParts.slice(-2).join('.')
+            : '';
+          var domains = ['', hostname, '.' + hostname, baseDomain];
+          var cookieNames = document.cookie.split(';').map(function(cookie) {
+            return cookie.split('=')[0].trim();
+          }).filter(function(name) {
+            return name === '_ga' || name.indexOf('_ga_') === 0;
+          });
+
+          cookieNames.forEach(function(name) {
+            domains.forEach(function(domain) {
+              var domainAttribute = domain ? '; Domain=' + domain : '';
+              document.cookie = name + '=; Max-Age=0; Path=/' + domainAttribute + '; SameSite=Lax';
+            });
+          });
+        }
+
+        function configureAnalytics() {
+          if (!analyticsAllowed) {
+            return;
+          }
+
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = window.gtag || function() {
+            window.dataLayer.push(arguments);
+          };
+          window.gtag('js', new Date());
+          window.gtag('config', measurementId);
+        }
+
+        function startAnalytics() {
+          var script;
+
+          if (analyticsAllowed) {
+            return;
+          }
+
+          analyticsAllowed = true;
+          window[disableProperty] = false;
+
+          if (analyticsLoaded) {
+            configureAnalytics();
+            return;
+          }
+
+          if (analyticsLoading) {
+            return;
+          }
+
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = window.gtag || function() {
+            window.dataLayer.push(arguments);
+          };
+          analyticsLoading = true;
+          script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=' + measurementId;
+          script.setAttribute('data-iub-purposes', '4');
+          script.onload = function() {
+            analyticsLoading = false;
+            analyticsLoaded = true;
+            configureAnalytics();
+          };
+          script.onerror = function() {
+            analyticsLoading = false;
+            script.remove();
+          };
+          document.head.appendChild(script);
+        }
+
+        function stopAnalytics() {
+          analyticsAllowed = false;
+          window[disableProperty] = true;
+          deleteAnalyticsCookies();
+        }
+
+        function applyPreference(preference) {
+          var purposes = preference && preference.purposes;
+          var measurementAllowed = Boolean(
+            purposes && purposes['4'] === true
+          );
+
+          if (measurementAllowed) {
+            startAnalytics();
+          } else {
+            stopAnalytics();
+          }
+        }
+
+        _iub.csConfiguration.countryDetection = true;
+        delete _iub.csConfiguration.usprApplies;
+        _iub.csConfiguration.showBannerForUS = true;
+        _iub.csConfiguration.perPurposeConsent = true;
+        _iub.csConfiguration.purposes = "1,4";
+        _iub.csConfiguration.preferenceCookie = {expireAfter: 365};
+        _iub.csConfiguration.banner.content = "We use Google Analytics to understand how visitors use this site and improve it. Analytics loads only if you allow it. Necessary site features work either way.";
+        _iub.csConfiguration.banner.acceptButtonCaption = "Allow analytics";
+        _iub.csConfiguration.banner.rejectButtonCaption = "No thanks";
+        _iub.csConfiguration.banner.customizeButtonCaption = "Privacy choices";
+        _iub.csConfiguration.callback = {
+          onPreferenceExpressed: applyPreference,
+          onPreferenceChange: applyPreference,
+          onStartupFailed: stopAnalytics,
+          onFatalError: stopAnalytics
+        };
+      }());
+    </script>
+    <script type="text/javascript" src="https://cs.iubenda.com/autoblocking/4606514.js"></script>
+    <script type="text/javascript" src="//cdn.iubenda.com/cs/gpp/stub.js"></script>
+    <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -22,18 +149,7 @@
     <meta name="msapplication-TileColor" content="#fffbfb">
     <meta name="theme-color" content="#ffffff">
 
-    {# <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
-    <script>
-      WebFont.load({
-        google: {
-          families: ['Overpass:400,700', 'Raleway:900']
-        }
-      });
-    </script> #}
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Raleway:wght@700;900&display=swap" rel="stylesheet">
-
+    <link href="/fonts/fonts.css" rel="stylesheet">
 
     {# General critical styles #}
     <style>{% include "css/critical.css" %}</style>
@@ -62,17 +178,6 @@
         <link rel="stylesheet" media="print" href="{{ item }}?{{ assetHash }}" onload="this.media='all'" />
       {% endfor %}
     {% endif %}
-
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-0T1NQBVXXP');
-    </script>
-
 
   </head>
 

@@ -16,6 +16,7 @@ const encodeUri = require('./src/filters/encode-uri.js');
 module.exports = config => {
   // Set directories to pass through to the dist folder
   config.addPassthroughCopy('./src/images/');
+  config.addPassthroughCopy('./src/fonts/');
   // Copy `./src/js/` to the dist folder
   config.addPassthroughCopy("./src/js/");
   // Copy favicons
