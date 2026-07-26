@@ -19,16 +19,35 @@ const contentTypes = {
 
 const iubendaStub = `
 (function() {
-  function preference(overallConsent, measurementAllowed) {
-    return {
-      consent: overallConsent,
-      purposes: {'1': true, '4': measurementAllowed}
-    };
+  function deleteAnalyticsCookies() {
+    document.cookie.split(';').forEach(function(cookie) {
+      var name = cookie.split('=')[0].trim();
+      if (name === '_ga' || name.indexOf('_ga_') === 0) {
+        document.cookie = name + '=; Max-Age=0; Path=/; SameSite=Lax';
+      }
+    });
   }
 
-  function express(allowed, callbackName) {
-    localStorage.setItem('dgs-iubenda-test-preference', allowed ? 'accepted' : 'rejected');
-    window._iub.csConfiguration.callback[callbackName](preference(allowed, allowed));
+  function activateMeasurement() {
+    localStorage.setItem('dgs-iubenda-test-preference', 'accepted');
+    window['ga-disable-G-0T1NQBVXXP'] = false;
+    document.querySelectorAll('script._iub_cs_activate[type="text/plain"][data-iub-purposes="4"]')
+      .forEach(function(blockedScript) {
+        var script = document.createElement('script');
+        if (blockedScript.src) {
+          script.src = blockedScript.src;
+          script.async = false;
+        } else {
+          script.text = blockedScript.textContent;
+        }
+        blockedScript.replaceWith(script);
+      });
+  }
+
+  function rejectMeasurement() {
+    localStorage.setItem('dgs-iubenda-test-preference', 'rejected');
+    window['ga-disable-G-0T1NQBVXXP'] = true;
+    deleteAnalyticsCookies();
   }
 
   function addButton(label, onClick) {
@@ -43,31 +62,20 @@ const iubendaStub = `
     var storedPreference = localStorage.getItem('dgs-iubenda-test-preference');
 
     if (mode === 'unknown') {
-      window._iub.csConfiguration.callback.onStartupFailed('country unresolved');
       return;
     }
 
     addButton('Privacy choices', function() {
-      localStorage.setItem('dgs-iubenda-test-preference', 'rejected');
-      window._iub.csConfiguration.callback.onPreferenceChange(preference(true, false));
+      rejectMeasurement();
     });
 
-    if (storedPreference) {
-      window._iub.csConfiguration.callback.onPreferenceExpressed(
-        preference(
-          storedPreference === 'accepted',
-          storedPreference === 'accepted'
-        )
-      );
+    if (storedPreference === 'accepted') {
+      activateMeasurement();
       return;
     }
 
-    addButton('Allow analytics', function() {
-      express(true, 'onPreferenceExpressed');
-    });
-    addButton('No thanks', function() {
-      express(false, 'onPreferenceExpressed');
-    });
+    addButton('Accept', activateMeasurement);
+    addButton('Reject', rejectMeasurement);
   }
 
   if (document.readyState === 'loading') {
@@ -80,6 +88,7 @@ const iubendaStub = `
 
 const googleAnalyticsStub = `
 (function() {
+  window.dataLayer = window.dataLayer || [];
   var originalPush = window.dataLayer.push.bind(window.dataLayer);
   window.dataLayer.push = function(value) {
     var result = originalPush(value);
@@ -90,6 +99,11 @@ const googleAnalyticsStub = `
     }
     return result;
   };
+  if (window.dataLayer.length && !window['ga-disable-G-0T1NQBVXXP']) {
+    fetch('https://www.google-analytics.com/g/collect?v=2&tid=G-0T1NQBVXXP', {
+      mode: 'no-cors'
+    });
+  }
 }());
 `
 
@@ -141,7 +155,7 @@ const createPage = async (browser, baseUrl) => {
 
     if (requestUrl.startsWith(baseUrl)) {
       await route.continue()
-    } else if (requestUrl.includes('cdn.iubenda.com/cs/iubenda_cs.js')) {
+    } else if (requestUrl.includes('embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js')) {
       await route.fulfill({contentType: 'application/javascript', body: iubendaStub})
     } else if (/iubenda\.com/.test(requestUrl)) {
       await route.fulfill({contentType: 'application/javascript', body: ''})
@@ -176,20 +190,20 @@ const run = async () => {
   try {
     const untouched = await createPage(browser, baseUrl)
     await untouched.page.goto(`${baseUrl}/`)
-    await untouched.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    await untouched.page.getByRole('button', {name: 'Accept'}).waitFor()
     assert.strictEqual(analyticsRequests(untouched.requests).length, 0)
     await untouched.context.close()
 
     const rejected = await createPage(browser, baseUrl)
     await rejected.page.goto(`${baseUrl}/`)
-    await rejected.page.getByRole('button', {name: 'No thanks'}).click()
+    await rejected.page.getByRole('button', {name: 'Reject'}).click()
     assert.strictEqual(analyticsRequests(rejected.requests).length, 0)
     await rejected.context.close()
 
     const accepted = await createPage(browser, baseUrl)
     await accepted.page.goto(`${baseUrl}/`)
     const acceptedUrl = accepted.page.url()
-    await accepted.page.getByRole('button', {name: 'Allow analytics'}).click()
+    await accepted.page.getByRole('button', {name: 'Accept'}).click()
     await waitFor(
       () => analyticsRequests(accepted.requests).length >= 2,
       'GA library and collection requests did not start after acceptance'
@@ -203,7 +217,7 @@ const run = async () => {
       'Stored acceptance did not restore Analytics on revisit'
     )
     assert.strictEqual(
-      await accepted.page.getByRole('button', {name: 'Allow analytics'}).count(),
+      await accepted.page.getByRole('button', {name: 'Accept'}).count(),
       0
     )
 
@@ -223,7 +237,7 @@ const run = async () => {
     await accepted.context.close()
 
     const failed = await createPage(browser, baseUrl)
-    await failed.page.route('**/cdn.iubenda.com/cs/iubenda_cs.js', route => route.abort())
+    await failed.page.route('**/embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js', route => route.abort())
     await failed.page.goto(`${baseUrl}/`)
     await new Promise(resolve => setTimeout(resolve, 100))
     assert.strictEqual(analyticsRequests(failed.requests).length, 0)

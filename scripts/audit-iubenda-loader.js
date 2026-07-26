@@ -2,25 +2,14 @@ const fs = require('fs')
 const path = require('path')
 
 const outputDirectory = path.resolve(__dirname, '../dist')
-const iubendaConfigurationStart = '<script type="text/javascript">\nvar _iub = _iub || [];'
+const iubendaWidget = '<script type="text/javascript" src="https://embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js"></script>'
 const requiredFragments = [
-  '"siteId":4606514',
-  '"cookiePolicyId":35923895',
-  '_iub.csConfiguration.countryDetection = true',
-  'delete _iub.csConfiguration.usprApplies',
-  '_iub.csConfiguration.showBannerForUS = true',
-  '_iub.csConfiguration.perPurposeConsent = true',
-  '_iub.csConfiguration.purposes = "1,4"',
-  '_iub.csConfiguration.preferenceCookie = {expireAfter: 365}',
-  '_iub.csConfiguration.banner.content = "We use Google Analytics to understand how visitors use this site and improve it. Analytics loads only if you allow it. Necessary site features work either way."',
-  '_iub.csConfiguration.banner.acceptButtonCaption = "Allow analytics"',
-  '_iub.csConfiguration.banner.rejectButtonCaption = "No thanks"',
-  '_iub.csConfiguration.banner.customizeButtonCaption = "Privacy choices"',
-  "purposes && purposes['4'] === true",
-  "script.setAttribute('data-iub-purposes', '4')",
-  'https://cs.iubenda.com/autoblocking/4606514.js',
-  '//cdn.iubenda.com/cs/gpp/stub.js',
-  '//cdn.iubenda.com/cs/iubenda_cs.js'
+  iubendaWidget,
+  'class="_iub_cs_activate"',
+  'type="text/plain"',
+  'data-iub-purposes="4"',
+  'https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP',
+  "gtag('config', 'G-0T1NQBVXXP')"
 ]
 
 const findHtmlFiles = directory => fs.readdirSync(directory, {withFileTypes: true})
@@ -55,8 +44,8 @@ const failures = htmlFiles.reduce((results, filePath) => {
 
   const contentAfterHead = html.slice(headStart + '<head>'.length).trimStart()
 
-  if (!contentAfterHead.startsWith(iubendaConfigurationStart)) {
-    results.push(`${relativePath}: Iubenda configuration is not first after <head>`)
+  if (!contentAfterHead.startsWith(iubendaWidget)) {
+    results.push(`${relativePath}: Iubenda widget is not first after <head>`)
   }
 
   requiredFragments.forEach(fragment => {
@@ -65,7 +54,7 @@ const failures = htmlFiles.reduce((results, filePath) => {
     }
   })
 
-  if (/<script[^>]+src=["'][^"']*(?:googletagmanager\.com\/gtag|google-analytics\.com)/i.test(html)) {
+  if (/<script(?![^>]*type=["']text\/plain["'])[^>]+src=["'][^"']*(?:googletagmanager\.com\/gtag|google-analytics\.com)/i.test(html)) {
     results.push(`${relativePath}: Google Analytics loads before consent`)
   }
 
