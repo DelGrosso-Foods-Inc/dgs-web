@@ -9,6 +9,7 @@
     "production-win": "SET NODE_ENV=production & npx gulp && SET NODE_ENV=production & npx eleventy",
     "audit:iubenda": "node scripts/audit-iubenda-loader.js",
     "test:consent": "node scripts/test-consent-browser.js",
+    "test:consent:live": "node scripts/test-consent-live.js",
     "test:forms": "node scripts/test-numbered-formspark-submission.js"
   },
   "keywords": [],

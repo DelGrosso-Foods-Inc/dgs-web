@@ -221,6 +221,19 @@ const run = async () => {
       0
     )
 
+    for (const route of ['/history/', '/employment/']) {
+      const requestCountBeforeNavigation = analyticsRequests(accepted.requests).length
+      await accepted.page.goto(`${baseUrl}${route}`)
+      await waitFor(
+        () => analyticsRequests(accepted.requests).length > requestCountBeforeNavigation,
+        `Stored acceptance did not restore Analytics on ${route}`
+      )
+      assert.strictEqual(
+        await accepted.page.getByRole('button', {name: 'Accept'}).count(),
+        0
+      )
+    }
+
     await accepted.context.addCookies([
       {name: '_ga', value: 'test', url: baseUrl},
       {name: '_ga_G_0T1NQBVXXP', value: 'test', url: baseUrl}
