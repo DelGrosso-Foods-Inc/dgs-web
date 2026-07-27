@@ -108,6 +108,26 @@ const createPage = async (browser, baseUrl) => {
 
 const analyticsRequests = requests => requests.filter(url => analyticsHostPattern.test(url))
 
+const colorChannel = value => {
+  const normalized = value / 255
+  return normalized <= 0.04045
+    ? normalized / 12.92
+    : Math.pow((normalized + 0.055) / 1.055, 2.4)
+}
+
+const relativeLuminance = color => {
+  const channels = color.match(/\d+(?:\.\d+)?/g).slice(0, 3).map(Number)
+  return (0.2126 * colorChannel(channels[0]))
+    + (0.7152 * colorChannel(channels[1]))
+    + (0.0722 * colorChannel(channels[2]))
+}
+
+const contrastRatio = (foreground, background) => {
+  const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background))
+  const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background))
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
 const run = async () => {
   if (!fs.existsSync(path.join(outputDirectory, 'index.html'))) {
     throw new Error('Missing dist output. Run npm run production before this test.')
@@ -125,9 +145,40 @@ const run = async () => {
     await untouched.page.getByRole('button', {name: 'Reject analytics'}).waitFor()
     await untouched.page.getByRole('button', {name: 'Manage preferences'}).waitFor()
     await untouched.page.getByText('Analytics stays off unless you allow it.').waitFor()
+    const consentModal = untouched.page.getByRole('dialog')
+    assert((await consentModal.getAttribute('class')).includes('cm--bar'))
     const allowBox = await untouched.page.getByRole('button', {name: 'Allow analytics'}).boundingBox()
     const rejectBox = await untouched.page.getByRole('button', {name: 'Reject analytics'}).boundingBox()
     assert(Math.abs(allowBox.width - rejectBox.width) < 1)
+    for (const buttonName of ['Allow analytics', 'Reject analytics', 'Manage preferences']) {
+      const buttonColors = await untouched.page.getByRole('button', {name: buttonName}).evaluate(element => {
+        const style = window.getComputedStyle(element)
+        return {background: style.backgroundColor, foreground: style.color}
+      })
+      assert(
+        contrastRatio(buttonColors.foreground, buttonColors.background) >= 4.5,
+        `${buttonName} does not meet WCAG AA text contrast`
+      )
+    }
+    const modalTextColors = await consentModal.evaluate(element => {
+      const background = window.getComputedStyle(element).backgroundColor
+      const foreground = window.getComputedStyle(element.querySelector('.cm__desc')).color
+      return {background, foreground}
+    })
+    assert(
+      contrastRatio(modalTextColors.foreground, modalTextColors.background) >= 4.5,
+      'Consent description does not meet WCAG AA text contrast'
+    )
+    const policyLinkColors = await consentModal.getByRole('link', {name: 'Privacy Policy'})
+      .evaluate(element => {
+        const background = window.getComputedStyle(element.closest('.cm__footer')).backgroundColor
+        const foreground = window.getComputedStyle(element).color
+        return {background, foreground}
+      })
+    assert(
+      contrastRatio(policyLinkColors.foreground, policyLinkColors.background) >= 4.5,
+      'Privacy Policy link does not meet WCAG AA text contrast'
+    )
     assert.strictEqual(
       await untouched.page.getByRole('link', {name: 'Privacy Policy'}).first().getAttribute('href'),
       policyUrl

@@ -113,8 +113,8 @@
       },
       guiOptions: {
         consentModal: {
-          layout: 'box',
-          position: 'bottom center',
+          layout: 'bar inline',
+          position: 'bottom',
           equalWeightButtons: true,
           flipButtons: false
         },
