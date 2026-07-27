@@ -251,6 +251,25 @@ const run = async () => {
       () => analyticsRequests(accepted.requests).length >= 2,
       'GA library and collection requests did not start after acceptance'
     )
+    assert.deepStrictEqual(
+      await accepted.page.evaluate(() => window.dataLayer
+        .filter(entry => entry[0] === 'consent')
+        .map(entry => [entry[0], entry[1], entry[2]])),
+      [
+        ['consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied'
+        }],
+        ['consent', 'update', {
+          analytics_storage: 'granted',
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied'
+        }]
+      ]
+    )
     assert.strictEqual(accepted.page.url(), acceptedUrl)
     assert.strictEqual(navigationsAfterAcceptance, 0)
 

@@ -78,6 +78,27 @@ htmlFiles.forEach(filePath => {
       if (containsAnalyticsInitializer && !isBlockedAnalytics) {
         failures.push(`${relativePath}: Google Analytics initializer is immediately executable`)
       }
+
+      if (containsAnalyticsInitializer && isBlockedAnalytics) {
+        const consentDefaultIndex = body.indexOf("gtag('consent', 'default'")
+        const consentUpdateIndex = body.indexOf("gtag('consent', 'update'")
+        const analyticsConfigIndex = body.indexOf("gtag('config'")
+        const hasDeniedConsentDefaults = [
+          "'analytics_storage': 'denied'",
+          "'ad_storage': 'denied'",
+          "'ad_user_data': 'denied'",
+          "'ad_personalization': 'denied'"
+        ].every(fragment => body.includes(fragment))
+        const hasGrantedAnalyticsUpdate = /gtag\('consent', 'update', \{[\s\S]*?'analytics_storage': 'granted'/.test(body)
+
+        if (!hasDeniedConsentDefaults
+          || !hasGrantedAnalyticsUpdate
+          || consentDefaultIndex === -1
+          || consentUpdateIndex < consentDefaultIndex
+          || analyticsConfigIndex < consentUpdateIndex) {
+          failures.push(`${relativePath}: Google Analytics is missing ordered measurement-only Consent Mode`)
+        }
+      }
     })
 
   if (/<iframe[^>]+(?:youtube|ytimg)/i.test(html)) {
