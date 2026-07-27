@@ -19,6 +19,12 @@ module.exports = config => {
   config.addPassthroughCopy('./src/fonts/');
   // Copy `./src/js/` to the dist folder
   config.addPassthroughCopy("./src/js/");
+  config.addPassthroughCopy({
+    "./node_modules/vanilla-cookieconsent/dist/cookieconsent.umd.js": "/vendor/cookieconsent/cookieconsent.umd.js",
+    "./node_modules/vanilla-cookieconsent/dist/cookieconsent.css": "/vendor/cookieconsent/cookieconsent.css",
+    "./node_modules/@orestbida/iframemanager/dist/iframemanager.js": "/vendor/iframemanager/iframemanager.js",
+    "./node_modules/@orestbida/iframemanager/dist/iframemanager.css": "/vendor/iframemanager/iframemanager.css"
+  });
   // Copy favicons
   config.addPassthroughCopy({ "./src/favicons/": "/" });
 

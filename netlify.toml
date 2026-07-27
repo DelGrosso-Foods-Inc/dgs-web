@@ -7,3 +7,9 @@
   to = "https://www.delgrossos.com/:splat"
   status = 301
   force = true
+
+[[redirects]]
+  from = "/privacy-policy/"
+  to = "https://www.iubenda.com/privacy-policy/35923895"
+  status = 302
+  force = true

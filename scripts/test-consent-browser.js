@@ -5,8 +5,10 @@ const path = require('path')
 const {chromium} = require('playwright-core')
 
 const outputDirectory = path.resolve(__dirname, '../dist')
+const policyUrl = 'https://www.iubenda.com/privacy-policy/35923895'
 const analyticsHostPattern = /(?:googletagmanager\.com\/gtag|google-analytics\.com)/
 const googleFontsHostPattern = /fonts\.(?:googleapis|gstatic)\.com/
+const prohibitedBeforeChoicePattern = /(?:iubenda\.com|googletagmanager\.com|google-analytics\.com|youtube(?:-nocookie)?\.com|ytimg\.com)/
 
 const contentTypes = {
   '.css': 'text/css',
@@ -16,75 +18,6 @@ const contentTypes = {
   '.woff2': 'font/woff2',
   '.xml': 'application/xml'
 }
-
-const iubendaStub = `
-(function() {
-  function deleteAnalyticsCookies() {
-    document.cookie.split(';').forEach(function(cookie) {
-      var name = cookie.split('=')[0].trim();
-      if (name === '_ga' || name.indexOf('_ga_') === 0) {
-        document.cookie = name + '=; Max-Age=0; Path=/; SameSite=Lax';
-      }
-    });
-  }
-
-  function activateMeasurement() {
-    localStorage.setItem('dgs-iubenda-test-preference', 'accepted');
-    window['ga-disable-G-0T1NQBVXXP'] = false;
-    document.querySelectorAll('script._iub_cs_activate[type="text/plain"][data-iub-purposes="4"]')
-      .forEach(function(blockedScript) {
-        var script = document.createElement('script');
-        if (blockedScript.src) {
-          script.src = blockedScript.src;
-          script.async = false;
-        } else {
-          script.text = blockedScript.textContent;
-        }
-        blockedScript.replaceWith(script);
-      });
-  }
-
-  function rejectMeasurement() {
-    localStorage.setItem('dgs-iubenda-test-preference', 'rejected');
-    window['ga-disable-G-0T1NQBVXXP'] = true;
-    deleteAnalyticsCookies();
-  }
-
-  function addButton(label, onClick) {
-    var button = document.createElement('button');
-    button.textContent = label;
-    button.addEventListener('click', onClick);
-    document.body.appendChild(button);
-  }
-
-  function initialize() {
-    var mode = new URL(window.location.href).searchParams.get('cmp');
-    var storedPreference = localStorage.getItem('dgs-iubenda-test-preference');
-
-    if (mode === 'unknown') {
-      return;
-    }
-
-    addButton('Privacy choices', function() {
-      rejectMeasurement();
-    });
-
-    if (storedPreference === 'accepted') {
-      activateMeasurement();
-      return;
-    }
-
-    addButton('Accept', activateMeasurement);
-    addButton('Reject', rejectMeasurement);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-  } else {
-    initialize();
-  }
-}());
-`
 
 const googleAnalyticsStub = `
 (function() {
@@ -149,16 +82,12 @@ const createPage = async (browser, baseUrl) => {
   const page = await context.newPage()
   const requests = []
 
-  page.on('request', request => requests.push(request.url()))
-  await page.route('**/*', async route => {
+  context.on('request', request => requests.push(request.url()))
+  await context.route('**/*', async route => {
     const requestUrl = route.request().url()
 
     if (requestUrl.startsWith(baseUrl)) {
       await route.continue()
-    } else if (requestUrl.includes('embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js')) {
-      await route.fulfill({contentType: 'application/javascript', body: iubendaStub})
-    } else if (/iubenda\.com/.test(requestUrl)) {
-      await route.fulfill({contentType: 'application/javascript', body: ''})
     } else if (requestUrl.includes('googletagmanager.com/gtag/js')) {
       await route.fulfill({contentType: 'application/javascript', body: googleAnalyticsStub})
     } else if (requestUrl.includes('google-analytics.com/g/collect')) {
@@ -167,6 +96,8 @@ const createPage = async (browser, baseUrl) => {
       await route.fulfill({contentType: 'text/html', body: '<!doctype html><title>YouTube</title>'})
     } else if (requestUrl.includes('cdn.sanity.io/images/')) {
       await route.fulfill({contentType: 'image/png', body: onePixelPng})
+    } else if (requestUrl.startsWith(policyUrl)) {
+      await route.fulfill({contentType: 'text/html', body: '<!doctype html><title>Privacy Policy</title>'})
     } else {
       await route.abort()
     }
@@ -190,25 +121,87 @@ const run = async () => {
   try {
     const untouched = await createPage(browser, baseUrl)
     await untouched.page.goto(`${baseUrl}/`)
-    await untouched.page.getByRole('button', {name: 'Accept'}).waitFor()
-    assert.strictEqual(analyticsRequests(untouched.requests).length, 0)
+    await untouched.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    await untouched.page.getByRole('button', {name: 'Reject analytics'}).waitFor()
+    await untouched.page.getByRole('button', {name: 'Manage preferences'}).waitFor()
+    await untouched.page.getByText('Analytics stays off unless you allow it.').waitFor()
+    const allowBox = await untouched.page.getByRole('button', {name: 'Allow analytics'}).boundingBox()
+    const rejectBox = await untouched.page.getByRole('button', {name: 'Reject analytics'}).boundingBox()
+    assert(Math.abs(allowBox.width - rejectBox.width) < 1)
+    assert.strictEqual(
+      await untouched.page.getByRole('link', {name: 'Privacy Policy'}).first().getAttribute('href'),
+      policyUrl
+    )
+    assert.deepStrictEqual(
+      untouched.requests.filter(url => prohibitedBeforeChoicePattern.test(url)),
+      []
+    )
+    await Promise.all([
+      untouched.page.waitForURL(`${baseUrl}/history/`),
+      untouched.page.getByRole('link', {name: 'History'}).first().click()
+    ])
+    await untouched.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    await untouched.page.goto(`${baseUrl}/`)
+    await untouched.page.getByRole('button', {name: 'Manage preferences'}).click()
+    const necessaryToggle = untouched.page.getByRole('checkbox', {name: 'Essential'})
+    assert.strictEqual(await necessaryToggle.isChecked(), true)
+    assert.strictEqual(await necessaryToggle.isDisabled(), true)
+    assert.strictEqual(
+      await untouched.page.getByRole('checkbox', {name: 'Analytics'}).isChecked(),
+      false
+    )
+    await untouched.page.getByRole('button', {name: 'Close privacy settings'}).click()
+    await untouched.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    const policyPagePromise = untouched.context.waitForEvent('page')
+    await untouched.page.getByRole('link', {name: 'Privacy Policy'}).first().click()
+    const policyPage = await policyPagePromise
+    await policyPage.waitForURL(policyUrl)
+    assert(untouched.requests.includes(policyUrl))
+    await policyPage.close()
     await untouched.context.close()
 
     const rejected = await createPage(browser, baseUrl)
     await rejected.page.goto(`${baseUrl}/`)
-    await rejected.page.getByRole('button', {name: 'Reject'}).click()
+    await rejected.page.getByRole('button', {name: 'Reject analytics'}).click()
+    await rejected.page.getByRole('dialog').waitFor({state: 'detached'})
     assert.strictEqual(analyticsRequests(rejected.requests).length, 0)
+    const rejectedConsentCookie = (await rejected.context.cookies())
+      .find(cookie => cookie.name === 'dgs_cookie_consent')
+    assert(rejectedConsentCookie)
+    const retentionDays = (rejectedConsentCookie.expires - (Date.now() / 1000)) / 86400
+    assert(retentionDays > 179 && retentionDays <= 180)
+    await rejected.page.reload()
+    assert.strictEqual(
+      await rejected.page.getByRole('button', {name: 'Reject analytics'}).count(),
+      0
+    )
+    await rejected.page.goto(`${baseUrl}/history/`)
+    assert.strictEqual(analyticsRequests(rejected.requests).length, 0)
+    const rejectedTab = await rejected.context.newPage()
+    await rejectedTab.goto(`${baseUrl}/employment/`)
+    assert.strictEqual(analyticsRequests(rejected.requests).length, 0)
+    assert.strictEqual(
+      await rejectedTab.getByRole('button', {name: 'Reject analytics'}).count(),
+      0
+    )
     await rejected.context.close()
 
     const accepted = await createPage(browser, baseUrl)
     await accepted.page.goto(`${baseUrl}/`)
     const acceptedUrl = accepted.page.url()
-    await accepted.page.getByRole('button', {name: 'Accept'}).click()
+    let navigationsAfterAcceptance = 0
+    accepted.page.on('framenavigated', frame => {
+      if (frame === accepted.page.mainFrame()) {
+        navigationsAfterAcceptance += 1
+      }
+    })
+    await accepted.page.getByRole('button', {name: 'Allow analytics'}).click()
     await waitFor(
       () => analyticsRequests(accepted.requests).length >= 2,
       'GA library and collection requests did not start after acceptance'
     )
     assert.strictEqual(accepted.page.url(), acceptedUrl)
+    assert.strictEqual(navigationsAfterAcceptance, 0)
 
     const analyticsRequestCount = analyticsRequests(accepted.requests).length
     await accepted.page.reload()
@@ -217,7 +210,7 @@ const run = async () => {
       'Stored acceptance did not restore Analytics on revisit'
     )
     assert.strictEqual(
-      await accepted.page.getByRole('button', {name: 'Accept'}).count(),
+      await accepted.page.getByRole('button', {name: 'Allow analytics'}).count(),
       0
     )
 
@@ -229,18 +222,35 @@ const run = async () => {
         `Stored acceptance did not restore Analytics on ${route}`
       )
       assert.strictEqual(
-        await accepted.page.getByRole('button', {name: 'Accept'}).count(),
+        await accepted.page.getByRole('button', {name: 'Allow analytics'}).count(),
         0
       )
     }
+
+    const acceptedTabRequestCount = analyticsRequests(accepted.requests).length
+    const acceptedTab = await accepted.context.newPage()
+    await acceptedTab.goto(`${baseUrl}/`)
+    await waitFor(
+      () => analyticsRequests(accepted.requests).length > acceptedTabRequestCount,
+      'Stored acceptance did not restore Analytics in a second tab'
+    )
+    const acceptedConsentCookie = (await accepted.context.cookies())
+      .find(cookie => cookie.name === 'dgs_cookie_consent')
+    assert(acceptedConsentCookie)
 
     await accepted.context.addCookies([
       {name: '_ga', value: 'test', url: baseUrl},
       {name: '_ga_G_0T1NQBVXXP', value: 'test', url: baseUrl}
     ])
-    await accepted.page.getByRole('button', {name: 'Privacy choices'}).click()
+    await accepted.page.getByRole('button', {name: 'Privacy Settings'}).click()
+    const analyticsToggle = accepted.page.getByRole('checkbox', {name: 'Analytics'})
+    assert.strictEqual(await analyticsToggle.isChecked(), true)
+    await analyticsToggle.click()
     const countAtWithdrawal = analyticsRequests(accepted.requests).length
-    await accepted.page.evaluate(() => window.gtag('event', 'after_withdrawal'))
+    await Promise.all([
+      accepted.page.waitForNavigation({waitUntil: 'domcontentloaded'}),
+      accepted.page.getByRole('button', {name: 'Save preferences'}).click()
+    ])
     await new Promise(resolve => setTimeout(resolve, 100))
     assert.strictEqual(analyticsRequests(accepted.requests).length, countAtWithdrawal)
     assert.deepStrictEqual(
@@ -249,27 +259,148 @@ const run = async () => {
     )
     await accepted.context.close()
 
+    const corrupted = await createPage(browser, baseUrl)
+    await corrupted.context.addCookies([
+      {name: 'dgs_cookie_consent', value: 'not-a-valid-preference', url: baseUrl}
+    ])
+    await corrupted.page.goto(`${baseUrl}/`)
+    await corrupted.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    assert.strictEqual(analyticsRequests(corrupted.requests).length, 0)
+    await corrupted.context.close()
+
+    const expired = await createPage(browser, baseUrl)
+    const expiredPreference = JSON.parse(decodeURIComponent(rejectedConsentCookie.value))
+    expiredPreference.expirationTime = Date.now() - 1000
+    await expired.context.addCookies([{
+      name: 'dgs_cookie_consent',
+      value: encodeURIComponent(JSON.stringify(expiredPreference)),
+      url: baseUrl,
+      expires: Math.floor(Date.now() / 1000) - 60
+    }])
+    await expired.page.goto(`${baseUrl}/`)
+    await expired.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    assert.strictEqual(analyticsRequests(expired.requests).length, 0)
+    await expired.context.close()
+
+    const unknown = await createPage(browser, baseUrl)
+    const unknownPreference = JSON.parse(decodeURIComponent(acceptedConsentCookie.value))
+    unknownPreference.categories.push('unknown')
+    unknownPreference.services.unknown = []
+    await unknown.context.addCookies([{
+      name: 'dgs_cookie_consent',
+      value: encodeURIComponent(JSON.stringify(unknownPreference)),
+      url: baseUrl
+    }])
+    await unknown.page.goto(`${baseUrl}/`)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    assert.strictEqual(analyticsRequests(unknown.requests).length, 0)
+    await unknown.context.close()
+
+    const oldRevision = await createPage(browser, baseUrl)
+    const oldRevisionPreference = JSON.parse(decodeURIComponent(acceptedConsentCookie.value))
+    oldRevisionPreference.revision = 0
+    await oldRevision.context.addCookies([{
+      name: 'dgs_cookie_consent',
+      value: encodeURIComponent(JSON.stringify(oldRevisionPreference)),
+      url: baseUrl
+    }])
+    await oldRevision.page.goto(`${baseUrl}/`)
+    await oldRevision.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    assert.strictEqual(analyticsRequests(oldRevision.requests).length, 0)
+    await oldRevision.context.close()
+
+    const missingServices = await createPage(browser, baseUrl)
+    const missingServicesPreference = JSON.parse(decodeURIComponent(acceptedConsentCookie.value))
+    delete missingServicesPreference.services
+    await missingServices.context.addCookies([{
+      name: 'dgs_cookie_consent',
+      value: encodeURIComponent(JSON.stringify(missingServicesPreference)),
+      url: baseUrl
+    }])
+    await missingServices.page.goto(`${baseUrl}/`)
+    await missingServices.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    assert.strictEqual(analyticsRequests(missingServices.requests).length, 0)
+    await missingServices.context.close()
+
+    const malformedTimestamps = await createPage(browser, baseUrl)
+    const malformedTimestampsPreference = JSON.parse(decodeURIComponent(acceptedConsentCookie.value))
+    malformedTimestampsPreference.consentTimestamp = 'not-a-date'
+    malformedTimestampsPreference.lastConsentTimestamp = 'also-not-a-date'
+    await malformedTimestamps.context.addCookies([{
+      name: 'dgs_cookie_consent',
+      value: encodeURIComponent(JSON.stringify(malformedTimestampsPreference)),
+      url: baseUrl
+    }])
+    await malformedTimestamps.page.goto(`${baseUrl}/`)
+    await malformedTimestamps.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    assert.strictEqual(analyticsRequests(malformedTimestamps.requests).length, 0)
+    await malformedTimestamps.context.close()
+
+    const nonIsoTimestamp = await createPage(browser, baseUrl)
+    const nonIsoTimestampPreference = JSON.parse(decodeURIComponent(acceptedConsentCookie.value))
+    nonIsoTimestampPreference.consentTimestamp = 'July 1, 2026'
+    await nonIsoTimestamp.context.addCookies([{
+      name: 'dgs_cookie_consent',
+      value: encodeURIComponent(JSON.stringify(nonIsoTimestampPreference)),
+      url: baseUrl
+    }])
+    await nonIsoTimestamp.page.goto(`${baseUrl}/`)
+    await nonIsoTimestamp.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    assert.strictEqual(analyticsRequests(nonIsoTimestamp.requests).length, 0)
+    await nonIsoTimestamp.context.close()
+
     const failed = await createPage(browser, baseUrl)
-    await failed.page.route('**/embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js', route => route.abort())
+    await failed.context.route('**/vendor/cookieconsent/cookieconsent.umd.js', route => route.abort())
     await failed.page.goto(`${baseUrl}/`)
     await new Promise(resolve => setTimeout(resolve, 100))
     assert.strictEqual(analyticsRequests(failed.requests).length, 0)
     await failed.context.close()
 
-    const unknown = await createPage(browser, baseUrl)
-    await unknown.page.goto(`${baseUrl}/?cmp=unknown`)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    assert.strictEqual(analyticsRequests(unknown.requests).length, 0)
-    await unknown.context.close()
-
     const content = await createPage(browser, baseUrl)
     await content.page.goto(`${baseUrl}/employment/`)
+    const loadVideoButton = content.page.getByRole('button', {name: 'Load video'}).first()
+    await loadVideoButton.waitFor()
+    await loadVideoButton.scrollIntoViewIfNeeded()
+    assert.strictEqual(
+      content.requests.filter(url => /youtube|ytimg/.test(url)).length,
+      0
+    )
     await waitFor(
-      () => content.requests.some(url => url.includes('youtube-nocookie.com/embed/')),
-      'YouTube privacy-enhanced embed did not load'
+      () => content.requests.some(url => url.includes('/images/video-placeholder.svg')),
+      'Local video placeholder asset did not load'
     )
     assert(content.requests.some(url => url.includes('cdn.sanity.io/images/')))
+    await loadVideoButton.click()
+    await waitFor(
+      () => content.requests.some(url => url.includes('youtube-nocookie.com/embed/')),
+      'Selected YouTube embed did not load after explicit interaction'
+    )
+    assert.strictEqual(
+      content.requests.filter(url => url.includes('youtube-nocookie.com/embed/')).length,
+      1
+    )
+    const youtubeRequestsAfterClick = content.requests.filter(url => /youtube|ytimg/.test(url)).length
+    await content.page.reload()
+    await content.page.getByRole('button', {name: 'Load video'}).waitFor()
+    assert.strictEqual(
+      content.requests.filter(url => /youtube|ytimg/.test(url)).length,
+      youtubeRequestsAfterClick
+    )
     assert.strictEqual(content.requests.filter(url => googleFontsHostPattern.test(url)).length, 0)
+    await content.page.goto(`${baseUrl}/contact/`)
+    const contactForm = content.page.locator('form[action="/.netlify/functions/contact"]')
+    await contactForm.getByLabel('First Name *').fill('Test')
+    await contactForm.getByLabel('Last Name *').fill('Visitor')
+    await contactForm.getByLabel('Email *').fill('visitor@example.com')
+    await contactForm.getByLabel('Message / Feedback / Question *').fill('Consent-independent form test.')
+    const formRequestPromise = content.page.waitForRequest(request => (
+      request.method() === 'POST'
+      && request.url() === `${baseUrl}/.netlify/functions/contact`
+    ))
+    await contactForm.getByRole('button', {name: 'Submit'}).click()
+    const formRequest = await formRequestPromise
+    assert.strictEqual(new URL(formRequest.url()).origin, baseUrl)
+    assert.strictEqual(analyticsRequests(content.requests).length, 0)
     await content.context.close()
   } finally {
     await browser.close()

@@ -12,7 +12,7 @@ module.exports = {
     iframeEmbed: ({node}) => `<div class="embed">${node.code}</div>`,
     youtube: (({node}) =>  {
       const youtubeId = getYouTubeID(node.url)
-      return (`<div class="videoOuterWrapper"><div class="videoWrapper"><iframe width="560" height="349" src="https://www.youtube-nocookie.com/embed/${youtubeId}"  frameborder="0" allowfullscreen></iframe></div></div>`)
+      return (`<div class="videoOuterWrapper"><div data-service="youtube" data-id="${youtubeId}" data-autoscale data-ratio="16:9" data-thumbnail="/images/video-placeholder.svg" data-iframe-title="YouTube video"></div></div>`)
     }),
   },
   marks: {

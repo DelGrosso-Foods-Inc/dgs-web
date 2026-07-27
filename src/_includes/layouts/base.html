@@ -3,14 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script type="text/javascript" src="https://embeds.iubenda.com/widgets/3e0ad386-3e15-432b-8094-4bca497cbf75.js"></script>
-    <script
-      class="_iub_cs_activate"
-      type="text/plain"
-      data-iub-purposes="4"
-      src="https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP"
-    ></script>
-    <script class="_iub_cs_activate" type="text/plain" data-iub-purposes="4">
+    <script type="text/plain" data-category="analytics" data-src="https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP" async></script>
+    <script type="text/plain" data-category="analytics">
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
@@ -35,6 +29,8 @@
     <meta name="theme-color" content="#ffffff">
 
     <link href="/fonts/fonts.css" rel="stylesheet">
+    <link href="/vendor/cookieconsent/cookieconsent.css" rel="stylesheet">
+    <link href="/vendor/iframemanager/iframemanager.css" rel="stylesheet">
 
     {# General critical styles #}
     <style>{% include "css/critical.css" %}</style>
@@ -81,6 +77,10 @@
     </div>
 
     {% include "partials/site-footer.html" %}
+
+    <script defer src="/vendor/cookieconsent/cookieconsent.umd.js"></script>
+    <script defer src="/vendor/iframemanager/iframemanager.js"></script>
+    <script defer src="/js/consent.js"></script>
     
     {# <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.7.3/dist/alpine.min.js" defer></script> #}
     {# <script src="https://cdn.jsdelivr.net/gh/mcstudios/glightbox/dist/js/glightbox.min.js" defer></script> #}
