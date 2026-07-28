@@ -7,6 +7,9 @@
     "start": "npx gulp && concurrently \"npx gulp watch\" \"npx eleventy --serve\"",
     "production": "NODE_ENV=production npx gulp && NODE_ENV=production npx eleventy",
     "production-win": "SET NODE_ENV=production & npx gulp && SET NODE_ENV=production & npx eleventy",
+    "audit:consent": "node scripts/audit-consent-system.js",
+    "test:consent": "node scripts/test-consent-browser.js",
+    "test:consent:live": "node scripts/test-consent-live.js",
     "test:forms": "node scripts/test-numbered-formspark-submission.js"
   },
   "keywords": [],
@@ -14,13 +17,13 @@
   "license": "ISC",
   "dependencies": {
     "@11ty/eleventy": "^0.11.1",
+    "@orestbida/iframemanager": "1.3.0",
     "@quasibit/eleventy-plugin-sitemap": "^2.0.4",
     "@sanity/block-content-to-html": "^1.3.8",
     "@sanity/block-content-to-markdown": "0.0.5",
     "@sanity/client": "^2.0.1",
     "concurrently": "^5.3.0",
     "dotenv": "^8.2.0",
-    "get-google-fonts": "^1.2.2",
     "get-youtube-id": "^1.0.1",
     "gorko": "^0.2.3",
     "groq": "^2.0.1",
@@ -31,12 +34,14 @@
     "markdown-it": "^11.0.1",
     "markdown-it-anchor": "^6.0.0",
     "moment": "^2.29.1",
-    "sass": "^1.29.0"
+    "sass": "^1.29.0",
+    "vanilla-cookieconsent": "3.1.0"
   },
   "devDependencies": {
     "eslint": "^7.13.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-html": "^6.1.0",
+    "playwright-core": "^1.62.0",
     "prettier": "2.1.2"
   }
 }

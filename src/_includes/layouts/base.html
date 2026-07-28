@@ -3,6 +3,25 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script type="text/plain" data-category="analytics" data-src="https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP" async></script>
+    <script type="text/plain" data-category="analytics">
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied'
+      });
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-0T1NQBVXXP');
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -21,18 +40,9 @@
     <meta name="msapplication-TileColor" content="#fffbfb">
     <meta name="theme-color" content="#ffffff">
 
-    {# <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
-    <script>
-      WebFont.load({
-        google: {
-          families: ['Overpass:400,700', 'Raleway:900']
-        }
-      });
-    </script> #}
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Raleway:wght@700;900&display=swap" rel="stylesheet">
-
+    <link href="/fonts/fonts.css" rel="stylesheet">
+    <link href="/vendor/cookieconsent/cookieconsent.css" rel="stylesheet">
+    <link href="/vendor/iframemanager/iframemanager.css" rel="stylesheet">
 
     {# General critical styles #}
     <style>{% include "css/critical.css" %}</style>
@@ -62,17 +72,6 @@
       {% endfor %}
     {% endif %}
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-0T1NQBVXXP');
-    </script>
-
-
   </head>
 
   <body>
@@ -90,6 +89,10 @@
     </div>
 
     {% include "partials/site-footer.html" %}
+
+    <script defer src="/vendor/cookieconsent/cookieconsent.umd.js"></script>
+    <script defer src="/vendor/iframemanager/iframemanager.js"></script>
+    <script defer src="/js/consent.js"></script>
     
     {# <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.7.3/dist/alpine.min.js" defer></script> #}
     {# <script src="https://cdn.jsdelivr.net/gh/mcstudios/glightbox/dist/js/glightbox.min.js" defer></script> #}

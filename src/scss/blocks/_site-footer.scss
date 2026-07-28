@@ -129,6 +129,18 @@
   }
 
   &__col {
+    button {
+      appearance: none;
+      border: 0;
+      padding: 0;
+      color: inherit;
+      background: transparent;
+      font: inherit;
+      text-decoration: underline;
+      text-decoration-color: get-color("light");
+      cursor: pointer;
+    }
+
     h4 {
       @extend .font-base;
       text-transform: uppercase;

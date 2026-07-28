@@ -1,0 +1,104 @@
+body #cc-main {
+  --cc-font-family: "Open Sans", sans-serif;
+  --cc-modal-border-radius: 0.25rem;
+  --cc-btn-border-radius: 0.25rem;
+  --cc-bg: #{get-color("light-shade")};
+  --cc-primary-color: #{get-color("dark")};
+  --cc-secondary-color: #{get-color("dark-glare")};
+  --cc-link-color: #{get-color("primary-shade")};
+  --cc-btn-primary-bg: #{get-color("primary-shade")};
+  --cc-btn-primary-color: #{get-color("light-glare")};
+  --cc-btn-primary-border-color: #{get-color("primary-shade")};
+  --cc-btn-primary-hover-bg: #005b38;
+  --cc-btn-primary-hover-color: #ffffff;
+  --cc-btn-primary-hover-border-color: #005b38;
+  --cc-btn-secondary-bg: #{get-color("light")};
+  --cc-btn-secondary-color: #{get-color("dark")};
+  --cc-btn-secondary-border-color: #{get-color("muted")};
+  --cc-btn-secondary-hover-bg: #e3ece7;
+  --cc-btn-secondary-hover-color: #{get-color("dark")};
+  --cc-btn-secondary-hover-border-color: #{get-color("primary-shade")};
+  --cc-separator-border-color: #d6d2c8;
+  --cc-toggle-on-bg: #{get-color("primary-shade")};
+  --cc-toggle-off-bg: #68665f;
+  --cc-toggle-readonly-bg: #{get-color("muted")};
+  --cc-section-category-border: #d6d2c8;
+  --cc-cookie-category-block-bg: #{get-color("light")};
+  --cc-cookie-category-block-border: #d6d2c8;
+  --cc-cookie-category-block-hover-bg: #e3ece7;
+  --cc-cookie-category-block-hover-border: #{get-color("primary-shade")};
+  --cc-cookie-category-expanded-block-hover-bg: #d6d2c8;
+  --cc-footer-bg: #{get-color("light")};
+  --cc-footer-color: #{get-color("dark-glare")};
+  --cc-footer-border-color: #d6d2c8;
+  --cc-overlay-bg: #{rgba(get-color("dark"), 0.72)};
+
+  .cm--bar {
+    border-top: 0.25rem solid get-color("primary-shade");
+    box-shadow: 0 -0.5rem 2rem rgba(get-color("dark"), 0.24);
+  }
+
+  .cm--bar.cm--inline {
+    .cm__body,
+    .cm__links {
+      max-width: 80rem;
+    }
+
+    .cm__body {
+      padding: 0.75rem 0;
+    }
+
+    .cm__btns > .cm__btn-group:first-child {
+      column-gap: 0.375rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      .cm__btn + .cm__btn {
+        margin-left: 0;
+      }
+    }
+  }
+
+  .cm__title,
+  .pm__title,
+  .pm__section-title {
+    font-family: "Raleway", sans-serif;
+    font-weight: 800;
+  }
+
+  .cm__title {
+    font-size: 1.25rem;
+  }
+
+  .cm__desc,
+  .pm__section-desc {
+    line-height: 1.6;
+  }
+
+  .cm__btn,
+  .pm__btn {
+    font-weight: 700;
+    min-height: 2.75rem;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible + .toggle__icon {
+    outline: 0.1875rem solid get-color("light-glare");
+    outline-offset: 0.125rem;
+    box-shadow: 0 0 0 0.3125rem get-color("dark");
+  }
+
+  @media screen and (max-width: 640px) {
+    .cm--bar {
+      border-radius: 0;
+    }
+
+    .cm__texts {
+      padding-top: 1.25rem;
+    }
+
+    .cm__btns {
+      padding-bottom: 1.25rem;
+    }
+  }
+}

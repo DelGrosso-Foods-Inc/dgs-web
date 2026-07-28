@@ -7,3 +7,21 @@
   to = "https://www.delgrossos.com/:splat"
   status = 301
   force = true
+
+[[redirects]]
+  from = "/privacy-policy/"
+  to = "https://www.iubenda.com/privacy-policy/35923895"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/cookie-policy/"
+  to = "https://www.iubenda.com/privacy-policy/35923895/cookie-policy"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/terms-and-conditions/"
+  to = "https://www.iubenda.com/terms-and-conditions/35923895"
+  status = 301
+  force = true

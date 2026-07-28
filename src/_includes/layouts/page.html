@@ -13,7 +13,14 @@
 
   {# <script>console.log({{sitePage.content | dump | safe}})</script> #}
 
-  {{contentSections(sitePage.content.sectionsTop)}}
+  {% if sitePage.content.slug.current == 'privacy-policy' %}
+    <section class="wrapper [ flow ]">
+      <h1>Privacy Policy</h1>
+      <p><a href="https://www.iubenda.com/privacy-policy/35923895">View the DelGrossos.com Privacy Policy</a>.</p>
+    </section>
+  {% else %}
+    {{contentSections(sitePage.content.sectionsTop)}}
+  {% endif %}
 
   {% if sitePage.content.slug.current == 'contact' %}
     {% include "sections/contact-form.html" %}
