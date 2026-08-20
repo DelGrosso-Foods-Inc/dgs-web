@@ -262,7 +262,7 @@ const run = async () => {
       await untouched.page.getByRole('checkbox', {name: 'Analytics'}).isChecked(),
       false
     )
-    await untouched.page.getByRole('button', {name: 'Close privacy settings'}).click()
+    await untouched.page.getByRole('button', {name: 'Close analytics preferences'}).click()
     await untouched.page.getByRole('button', {name: 'Allow analytics'}).waitFor()
     const policyPagePromise = untouched.context.waitForEvent('page')
     await untouched.page.getByRole('link', {name: 'Privacy Policy'}).first().click()
@@ -374,7 +374,7 @@ const run = async () => {
       {name: '_ga', value: 'test', url: baseUrl},
       {name: '_ga_G_0T1NQBVXXP', value: 'test', url: baseUrl}
     ])
-    await accepted.page.getByRole('button', {name: 'Privacy Settings'}).click()
+    await accepted.page.getByRole('button', {name: 'Analytics Preferences'}).click()
     const analyticsToggle = accepted.page.getByRole('checkbox', {name: 'Analytics'})
     assert.strictEqual(await analyticsToggle.isChecked(), true)
     await analyticsToggle.click()

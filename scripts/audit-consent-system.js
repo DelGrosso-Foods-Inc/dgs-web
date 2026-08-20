@@ -20,6 +20,8 @@ const requiredRouteFragments = requiredAssets
   .map(relativePath => `/${relativePath}`)
   .concat([
   'data-cc="show-preferencesModal"',
+  'Analytics Preferences',
+  'class="footer__us-privacy-controls"',
   'class="iubenda-cs-uspr-link"',
   'class="iubenda-cs-preferences-link"',
   policyUrl,
