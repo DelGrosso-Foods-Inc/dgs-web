@@ -148,21 +148,21 @@
           en: {
             consentModal: {
               title: 'Privacy choices',
-              description: 'We use necessary technologies to operate this website. With your permission, we also use Google Analytics to understand site usage. Analytics stays off unless you allow it. You can change your choice anytime through Privacy Settings.',
+              description: 'We use necessary technologies to operate this website. With your permission, we also use Google Analytics to understand site usage. Analytics stays off unless you allow it. You can change your choice anytime through Analytics Preferences.',
               acceptAllBtn: 'Allow analytics',
               acceptNecessaryBtn: 'Reject analytics',
               showPreferencesBtn: 'Manage preferences',
               footer: '<a href="' + policyUrl + '" target="_blank" rel="noopener noreferrer">Privacy Policy</a>'
             },
             preferencesModal: {
-              title: 'Privacy settings',
+              title: 'Analytics preferences',
               acceptAllBtn: 'Allow analytics',
               acceptNecessaryBtn: 'Reject analytics',
               savePreferencesBtn: 'Save preferences',
-              closeIconLabel: 'Close privacy settings',
+              closeIconLabel: 'Close analytics preferences',
               sections: [
                 {
-                  title: 'Your privacy choices',
+                  title: 'Your analytics choice',
                   description: 'Choose whether DelGrossos.com may use Google Analytics. Essential website operation remains available either way.'
                 },
                 {
