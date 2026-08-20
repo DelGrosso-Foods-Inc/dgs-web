@@ -5,7 +5,8 @@ const baseUrl = process.env.CONSENT_TEST_URL
   || 'https://feat-local-prior-consent--dgs-web.netlify.app'
 const routes = ['/history/', '/employment/']
 const analyticsHostPattern = /(?:googletagmanager\.com\/gtag|google-analytics\.com)/
-const prohibitedBeforeChoicePattern = /(?:iubenda\.com|googletagmanager\.com|google-analytics\.com|youtube(?:-nocookie)?\.com|ytimg\.com)/
+const iubendaControlsPattern = /cdn\.iubenda\.com\/cs\/iubenda_cs\.js/
+const prohibitedBeforeChoicePattern = /(?:googletagmanager\.com|google-analytics\.com|youtube(?:-nocookie)?\.com|ytimg\.com)/
 
 const waitFor = async (predicate, message) => {
   const deadline = Date.now() + 10000
@@ -31,9 +32,20 @@ const run = async () => {
   try {
     await page.goto(`${baseUrl}/`, {waitUntil: 'domcontentloaded'})
     await page.getByRole('button', {name: 'Allow analytics'}).waitFor()
+    await waitFor(
+      () => requests.some(url => iubendaControlsPattern.test(url)),
+      'Iubenda US privacy controls did not load'
+    )
     assert.deepStrictEqual(
       requests.filter(url => prohibitedBeforeChoicePattern.test(url)),
       []
+    )
+    assert.strictEqual(
+      await page.evaluate(() => Array.from(document.scripts).some(script =>
+        script.textContent.includes('googleConsentMode: false')
+        && script.textContent.includes('uetConsentMode: false')
+      )),
+      true
     )
 
     await page.getByRole('button', {name: 'Allow analytics'}).click()

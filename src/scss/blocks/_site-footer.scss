@@ -11,6 +11,22 @@
     }
   }
 
+  & .iubenda-cs-uspr-link,
+  & .iubenda-cs-preferences-link {
+    color: inherit !important;
+  }
+
+  & .iubenda-cs-preferences-link {
+    display: inline-flex;
+    align-items: center;
+    gap: get-size("200");
+
+    img {
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+  }
+
   &__grid {
     @include media-query("md") {
       display: grid;

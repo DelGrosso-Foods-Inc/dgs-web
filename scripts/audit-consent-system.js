@@ -3,6 +3,9 @@ const path = require('path')
 
 const outputDirectory = path.resolve(__dirname, '../dist')
 const policyUrl = 'https://www.iubenda.com/privacy-policy/35923895'
+const noticeAtCollectionUrl = 'https://www.iubenda.com/privacy-policy/35923895/cookie-policy?an=no&amp;s_ck=false&amp;newmarkup=yes'
+const iubendaGppUrl = 'https://cdn.iubenda.com/cs/gpp/stub.js'
+const iubendaControlsUrl = 'https://cdn.iubenda.com/cs/iubenda_cs.js'
 const requiredAssets = [
   'vendor/cookieconsent/cookieconsent.css',
   'vendor/cookieconsent/cookieconsent.umd.js',
@@ -16,7 +19,16 @@ const requiredRouteFragments = requiredAssets
   .map(relativePath => `/${relativePath}`)
   .concat([
   'data-cc="show-preferencesModal"',
+  'class="iubenda-cs-uspr-link"',
+  'class="iubenda-cs-preferences-link"',
   policyUrl,
+  noticeAtCollectionUrl,
+  iubendaGppUrl,
+  iubendaControlsUrl,
+  'googleConsentMode: false',
+  'uetConsentMode: false',
+  "usprPurposes: 's,sh,adv'",
+  "privacyPolicyNoticeAtCollectionUrl: 'https://www.iubenda.com/privacy-policy/35923895/cookie-policy?an=no&s_ck=false&newmarkup=yes'",
   'type="text/plain"',
   'data-category="analytics"',
   'data-src="https://www.googletagmanager.com/gtag/js?id=G-0T1NQBVXXP"'
@@ -61,8 +73,16 @@ htmlFiles.forEach(filePath => {
     }
   })
 
-  if (/(?:embeds|cdn)\.iubenda\.com|iubenda\.js|iubenda-cs-|_iub_cs_/i.test(html)) {
-    failures.push(`${relativePath}: obsolete browser-side Iubenda CMP code remains`)
+  if (/cs\.iubenda\.com\/(?:sync|autoblocking)\/|embeds\.iubenda\.com\/widgets\//i.test(html)) {
+    failures.push(`${relativePath}: Iubenda consent blocking or Consent Mode sync remains`)
+  }
+
+  if (/_iub_cs_activate|data-iub-purposes/i.test(html)) {
+    failures.push(`${relativePath}: Iubenda still controls a blocked website service`)
+  }
+
+  if (/googleConsentMode\s*:\s*(?:true|['"]template['"])|uetConsentMode\s*:\s*true/i.test(html)) {
+    failures.push(`${relativePath}: Iubenda consent signals are not explicitly disabled`)
   }
 
   if (/<script(?![^>]*type=["']text\/plain["'])[^>]+(?:src|data-src)=["'][^"']*(?:googletagmanager\.com|google-analytics\.com)/i.test(html)) {

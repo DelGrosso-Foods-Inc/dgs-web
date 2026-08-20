@@ -6,9 +6,12 @@ const {chromium} = require('playwright-core')
 
 const outputDirectory = path.resolve(__dirname, '../dist')
 const policyUrl = 'https://www.iubenda.com/privacy-policy/35923895'
+const iubendaGppUrl = 'https://cdn.iubenda.com/cs/gpp/stub.js'
+const iubendaControlsUrl = 'https://cdn.iubenda.com/cs/iubenda_cs.js'
 const analyticsHostPattern = /(?:googletagmanager\.com\/gtag|google-analytics\.com)/
 const googleFontsHostPattern = /fonts\.(?:googleapis|gstatic)\.com/
-const prohibitedBeforeChoicePattern = /(?:iubenda\.com|googletagmanager\.com|google-analytics\.com|youtube(?:-nocookie)?\.com|ytimg\.com)/
+const iubendaHostPattern = /cdn\.iubenda\.com\/cs\/(?:gpp\/stub|iubenda_cs)\.js/
+const prohibitedBeforeChoicePattern = /(?:googletagmanager\.com|google-analytics\.com|youtube(?:-nocookie)?\.com|ytimg\.com)/
 
 const contentTypes = {
   '.css': 'text/css',
@@ -38,6 +41,18 @@ const googleAnalyticsStub = `
     });
   }
 }());
+`
+
+const iubendaControlsStub = `
+document.addEventListener('click', function(event) {
+  var preferencesLink = event.target.closest('.iubenda-cs-preferences-link');
+  var noticeLink = event.target.closest('.iubenda-cs-uspr-link');
+
+  if (preferencesLink || noticeLink) {
+    event.preventDefault();
+    window.__iubendaTestDialog = preferencesLink ? 'preferences' : 'notice';
+  }
+});
 `
 
 const onePixelPng = Buffer.from(
@@ -88,6 +103,10 @@ const createPage = async (browser, baseUrl) => {
 
     if (requestUrl.startsWith(baseUrl)) {
       await route.continue()
+    } else if (requestUrl === iubendaGppUrl) {
+      await route.fulfill({contentType: 'application/javascript', body: ''})
+    } else if (requestUrl === iubendaControlsUrl) {
+      await route.fulfill({contentType: 'application/javascript', body: iubendaControlsStub})
     } else if (requestUrl.includes('googletagmanager.com/gtag/js')) {
       await route.fulfill({contentType: 'application/javascript', body: googleAnalyticsStub})
     } else if (requestUrl.includes('google-analytics.com/g/collect')) {
@@ -107,6 +126,7 @@ const createPage = async (browser, baseUrl) => {
 }
 
 const analyticsRequests = requests => requests.filter(url => analyticsHostPattern.test(url))
+const iubendaRequests = requests => requests.filter(url => iubendaHostPattern.test(url))
 
 const colorChannel = value => {
   const normalized = value / 255
@@ -145,6 +165,42 @@ const run = async () => {
     await untouched.page.getByRole('button', {name: 'Reject analytics'}).waitFor()
     await untouched.page.getByRole('button', {name: 'Manage preferences'}).waitFor()
     await untouched.page.getByText('Analytics stays off unless you allow it.').waitFor()
+    await waitFor(
+      () => iubendaRequests(untouched.requests).length === 2,
+      'Iubenda US privacy controls did not load before the analytics choice'
+    )
+    assert.deepStrictEqual(
+      iubendaRequests(untouched.requests).sort(),
+      [iubendaControlsUrl, iubendaGppUrl].sort()
+    )
+    assert.deepStrictEqual(
+      await untouched.page.evaluate(() => ({
+        analyticsDataLayerType: typeof window.dataLayer,
+        googleConsentMode: window._iub.csConfiguration.googleConsentMode,
+        uetConsentMode: window._iub.csConfiguration.uetConsentMode
+      })),
+      {
+        analyticsDataLayerType: 'undefined',
+        googleConsentMode: false,
+        uetConsentMode: false
+      }
+    )
+    const noticeAtCollectionLink = untouched.page.getByRole('link', {name: 'Notice at Collection'})
+    const privacyChoicesLink = untouched.page.getByRole('link', {name: /Your Privacy Choices/})
+    assert.strictEqual(
+      await noticeAtCollectionLink.getAttribute('href'),
+      'https://www.iubenda.com/privacy-policy/35923895/cookie-policy?an=no&s_ck=false&newmarkup=yes'
+    )
+    assert.strictEqual(await noticeAtCollectionLink.getAttribute('target'), '_blank')
+    assert.strictEqual(await privacyChoicesLink.getAttribute('href'), '#')
+    assert.strictEqual(
+      await privacyChoicesLink.locator('img').getAttribute('alt'),
+      'California Consumer Privacy Act (CCPA) Opt-Out Icon'
+    )
+    await noticeAtCollectionLink.click()
+    assert.strictEqual(await untouched.page.evaluate(() => window.__iubendaTestDialog), 'notice')
+    await privacyChoicesLink.click()
+    assert.strictEqual(await untouched.page.evaluate(() => window.__iubendaTestDialog), 'preferences')
     const consentModal = untouched.page.getByRole('dialog')
     assert((await consentModal.getAttribute('class')).includes('cm--bar'))
     const allowBox = await untouched.page.getByRole('button', {name: 'Allow analytics'}).boundingBox()
@@ -216,6 +272,7 @@ const run = async () => {
     await rejected.page.getByRole('button', {name: 'Reject analytics'}).click()
     await rejected.page.getByRole('dialog').waitFor({state: 'detached'})
     assert.strictEqual(analyticsRequests(rejected.requests).length, 0)
+    assert.strictEqual(iubendaRequests(rejected.requests).length, 2)
     const rejectedConsentCookie = (await rejected.context.cookies())
       .find(cookie => cookie.name === 'dgs_cookie_consent')
     assert(rejectedConsentCookie)
