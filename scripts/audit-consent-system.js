@@ -4,6 +4,7 @@ const path = require('path')
 const outputDirectory = path.resolve(__dirname, '../dist')
 const policyUrl = 'https://www.iubenda.com/privacy-policy/35923895'
 const noticeAtCollectionUrl = 'https://www.iubenda.com/privacy-policy/35923895/cookie-policy?an=no&amp;s_ck=false&amp;newmarkup=yes'
+const usPrivacyRightsUrl = 'https://www.iubenda.com/privacy-policy/35923895/legal?an=no&amp;s_ck=false&amp;newmarkup=yes#privacy_rights_under_us_state_laws'
 const iubendaGppUrl = 'https://cdn.iubenda.com/cs/gpp/stub.js'
 const iubendaControlsUrl = 'https://cdn.iubenda.com/cs/iubenda_cs.js'
 const requiredAssets = [
@@ -23,6 +24,7 @@ const requiredRouteFragments = requiredAssets
   'class="iubenda-cs-preferences-link"',
   policyUrl,
   noticeAtCollectionUrl,
+  usPrivacyRightsUrl,
   iubendaGppUrl,
   iubendaControlsUrl,
   'googleConsentMode: false',

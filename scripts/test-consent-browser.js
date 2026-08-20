@@ -192,7 +192,12 @@ const run = async () => {
       'https://www.iubenda.com/privacy-policy/35923895/cookie-policy?an=no&s_ck=false&newmarkup=yes'
     )
     assert.strictEqual(await noticeAtCollectionLink.getAttribute('target'), '_blank')
-    assert.strictEqual(await privacyChoicesLink.getAttribute('href'), '#')
+    assert.strictEqual(
+      await privacyChoicesLink.getAttribute('href'),
+      'https://www.iubenda.com/privacy-policy/35923895/legal?an=no&s_ck=false&newmarkup=yes#privacy_rights_under_us_state_laws'
+    )
+    assert.strictEqual(await privacyChoicesLink.getAttribute('target'), '_blank')
+    assert.strictEqual(await privacyChoicesLink.getAttribute('rel'), 'noopener noreferrer')
     assert.strictEqual(
       await privacyChoicesLink.locator('img').getAttribute('alt'),
       'California Consumer Privacy Act (CCPA) Opt-Out Icon'
