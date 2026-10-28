@@ -30,6 +30,24 @@
           ></textarea>
         </div>
 
+        <div class="contactForm__honeypot" aria-hidden="true">
+          <label for="anonymous-report-fax">Fax</label>
+          <input
+            id="anonymous-report-fax"
+            name="_honeypot"
+            type="text"
+            tabindex="-1"
+            autocomplete="off"
+          >
+        </div>
+
+        <div
+          class="cf-turnstile"
+          data-sitekey="{{ turnstile.siteKey }}"
+          data-action="anonymous_report"
+          data-appearance="interaction-only"
+        ></div>
+
         <p
           class="contactForm__error"
           id="submission-error"
@@ -70,4 +88,5 @@
   </div>
 </section>
 
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="/js/formspark-form.js" defer></script>

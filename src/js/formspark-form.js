@@ -16,6 +16,7 @@
   var progressMessage = document.querySelector('[data-formspark-form-progress]')
   var successMessage = document.querySelector('[data-formspark-form-success]')
   var progressText = form.getAttribute('data-formspark-form-progress-message')
+  var turnstileWidget = form.querySelector('.cf-turnstile')
 
   if (!submitButton || !errorMessage || !successMessage || !form.action) {
     return
@@ -80,6 +81,12 @@
       successMessage.hidden = false
       successMessage.focus()
     }).catch(function () {
+      // Each Turnstile token passes the check once only, so a new attempt
+      // needs a new token.
+      if (window.turnstile && turnstileWidget) {
+        window.turnstile.reset(turnstileWidget)
+      }
+
       errorMessage.classList.add('is-visible')
       errorMessage.focus()
       submitButton.disabled = false
