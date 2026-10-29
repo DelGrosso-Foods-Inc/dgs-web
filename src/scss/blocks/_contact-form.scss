@@ -104,3 +104,12 @@
     padding: get-size('700');
   }
 }
+
+// A bot check: people never see this field, so a filled value means a bot.
+.contactForm__honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

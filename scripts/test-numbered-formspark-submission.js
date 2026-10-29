@@ -49,6 +49,7 @@ async function main () {
 
     const handler = createNumberedFormsparkHandler(handlerOptions, {
       allocateSubmissionId: () => Promise.resolve(42),
+      verifyTurnstile: () => Promise.resolve(true),
       forwardSubmission: (submission, submissionId) => {
         forwardedSubmission = {
           submission,
@@ -58,7 +59,10 @@ async function main () {
       }
     })
     const response = await handler({
-      body: JSON.stringify({ message: '  Hello  ' }),
+      body: JSON.stringify({
+        message: '  Hello  ',
+        'cf-turnstile-response': 'token'
+      }),
       headers: {
         'content-type': 'application/json'
       },
@@ -83,10 +87,11 @@ async function main () {
   await runTest('redirects after a URL-encoded submission succeeds', async () => {
     const handler = createNumberedFormsparkHandler(handlerOptions, {
       allocateSubmissionId: () => Promise.resolve(43),
+      verifyTurnstile: () => Promise.resolve(true),
       forwardSubmission: () => Promise.resolve()
     })
     const response = await handler({
-      body: 'message=Hello+from+a+browser',
+      body: 'message=Hello+from+a+browser&cf-turnstile-response=token',
       headers: {
         'content-type': 'application/x-www-form-urlencoded'
       },
@@ -105,6 +110,7 @@ async function main () {
   await runTest('redirects a rejected URL-encoded submission to the form error', async () => {
     const handler = createNumberedFormsparkHandler(handlerOptions, {
       allocateSubmissionId: () => Promise.resolve(44),
+      verifyTurnstile: () => Promise.resolve(true),
       forwardSubmission: () => Promise.resolve()
     })
     const responsePromise = handler({
@@ -130,10 +136,11 @@ async function main () {
     await withMutedConsoleError(async () => {
       const handler = createNumberedFormsparkHandler(handlerOptions, {
         allocateSubmissionId: () => Promise.resolve(45),
+        verifyTurnstile: () => Promise.resolve(true),
         forwardSubmission: () => Promise.reject(new Error('Formspark failed'))
       })
       const response = await handler({
-        body: 'message=Hello',
+        body: 'message=Hello&cf-turnstile-response=token',
         headers: {
           'content-type': 'application/x-www-form-urlencoded'
         },
@@ -156,13 +163,17 @@ async function main () {
     await withMutedConsoleError(async () => {
       const handler = createNumberedFormsparkHandler(handlerOptions, {
         allocateSubmissionId: () => Promise.reject(new Error('Upstash failed')),
+        verifyTurnstile: () => Promise.resolve(true),
         forwardSubmission: (submission, submissionId) => {
           forwardedSubmissionId = submissionId
           return Promise.resolve()
         }
       })
       const response = await handler({
-        body: JSON.stringify({ message: 'Important report' }),
+        body: JSON.stringify({
+          message: 'Important report',
+          'cf-turnstile-response': 'token'
+        }),
         headers: {
           'content-type': 'application/json'
         },
@@ -183,6 +194,7 @@ async function main () {
   await runTest('rejects unsupported submission content types', async () => {
     const handler = createNumberedFormsparkHandler(handlerOptions, {
       allocateSubmissionId: () => Promise.resolve(46),
+      verifyTurnstile: () => Promise.resolve(true),
       forwardSubmission: () => Promise.resolve()
     })
     const response = await handler({
@@ -200,6 +212,124 @@ async function main () {
       },
       body: JSON.stringify({ error: 'Unsupported media type' })
     })
+  })
+
+  await runTest('drops a submission that fills the honeypot', async () => {
+    let forwarded = false
+
+    const handler = createNumberedFormsparkHandler(handlerOptions, {
+      allocateSubmissionId: () => Promise.resolve(47),
+      verifyTurnstile: () => Promise.resolve(true),
+      forwardSubmission: () => {
+        forwarded = true
+        return Promise.resolve()
+      }
+    })
+    const response = await handler({
+      body: 'message=Buy+now&_honeypot=555-0100&cf-turnstile-response=token',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded'
+      },
+      httpMethod: 'POST'
+    })
+
+    assert.deepStrictEqual(response, {
+      statusCode: 303,
+      headers: {
+        Location: '/form-submitted/'
+      },
+      body: ''
+    })
+    assert.strictEqual(forwarded, false)
+  })
+
+  await runTest('rejects a submission without a Turnstile token', async () => {
+    let forwarded = false
+
+    const handler = createNumberedFormsparkHandler(handlerOptions, {
+      allocateSubmissionId: () => Promise.resolve(48),
+      verifyTurnstile: () => Promise.resolve(true),
+      forwardSubmission: () => {
+        forwarded = true
+        return Promise.resolve()
+      }
+    })
+    const response = await handler({
+      body: JSON.stringify({ message: 'Hello' }),
+      headers: {
+        'content-type': 'application/json'
+      },
+      httpMethod: 'POST'
+    })
+
+    assert.strictEqual(response.statusCode, 403)
+    assert.strictEqual(forwarded, false)
+  })
+
+  await runTest('rejects a submission that fails the Turnstile check', async () => {
+    let checkedToken
+    let checkedIp
+    let forwarded = false
+
+    const handler = createNumberedFormsparkHandler(handlerOptions, {
+      allocateSubmissionId: () => Promise.resolve(49),
+      verifyTurnstile: (token, remoteIp) => {
+        checkedToken = token
+        checkedIp = remoteIp
+        return Promise.resolve(false)
+      },
+      forwardSubmission: () => {
+        forwarded = true
+        return Promise.resolve()
+      }
+    })
+    const response = await handler({
+      body: 'message=Hello&cf-turnstile-response=bad-token',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-nf-client-connection-ip': '203.0.113.7'
+      },
+      httpMethod: 'POST'
+    })
+
+    assert.deepStrictEqual(response, {
+      statusCode: 303,
+      headers: {
+        Location: '/contact/#submission-error'
+      },
+      body: ''
+    })
+    assert.strictEqual(checkedToken, 'bad-token')
+    assert.strictEqual(checkedIp, '203.0.113.7')
+    assert.strictEqual(forwarded, false)
+  })
+
+  await runTest('rejects a submission when Turnstile is unavailable', async () => {
+    let forwarded = false
+
+    await withMutedConsoleError(async () => {
+      const handler = createNumberedFormsparkHandler(handlerOptions, {
+        allocateSubmissionId: () => Promise.resolve(50),
+        verifyTurnstile: () => Promise.reject(new Error('Turnstile failed')),
+        forwardSubmission: () => {
+          forwarded = true
+          return Promise.resolve()
+        }
+      })
+      const response = await handler({
+        body: JSON.stringify({
+          message: 'Hello',
+          'cf-turnstile-response': 'token'
+        }),
+        headers: {
+          'content-type': 'application/json'
+        },
+        httpMethod: 'POST'
+      })
+
+      assert.strictEqual(response.statusCode, 502)
+    })
+    assert.strictEqual(forwarded, false)
   })
 }
 

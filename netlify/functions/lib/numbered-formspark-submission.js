@@ -141,6 +141,41 @@ function allocateSubmissionId (counterKey) {
   })
 }
 
+// Cloudflare checks the token that the browser's Turnstile widget produced.
+// Each token passes this check once only.
+function verifyTurnstile (token, remoteIp) {
+  const secret = process.env.TURNSTILE_SECRET_KEY
+
+  if (!secret) {
+    return Promise.reject(new Error('Turnstile is not configured'))
+  }
+
+  return postJson('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    Accept: 'application/json'
+  }, Object.assign({
+    secret,
+    response: token
+  }, remoteIp ? { remoteip: remoteIp } : {})).then(response => {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw new Error('Turnstile request failed')
+    }
+
+    try {
+      return JSON.parse(response.body).success === true
+    } catch (error) {
+      throw new Error('Turnstile returned an invalid response')
+    }
+  })
+}
+
+function getHeader (headers = {}, name) {
+  const headerName = Object.keys(headers).find(headerName => (
+    headerName.toLowerCase() === name
+  ))
+
+  return headerName ? headers[headerName] : undefined
+}
+
 function forwardSubmission (options, submission, submissionId) {
   const formsparkActionUrl = process.env[options.actionUrlEnvironmentVariable] ||
     options.defaultActionUrl
@@ -166,6 +201,7 @@ function createNumberedFormsparkHandler (options, dependencies = {}) {
   const forward = dependencies.forwardSubmission || ((submission, submissionId) => (
     forwardSubmission(options, submission, submissionId)
   ))
+  const verifyBotCheck = dependencies.verifyTurnstile || verifyTurnstile
 
   return async event => {
     if (event.httpMethod !== 'POST') {
@@ -192,10 +228,51 @@ function createNumberedFormsparkHandler (options, dependencies = {}) {
       return jsonResponse(400, { error: 'Invalid submission' })
     }
 
+    // A bot filled the hidden field. It sees a success and nothing is sent.
+    if (typeof body._honeypot === 'string' && body._honeypot.trim()) {
+      return parsedSubmission.responseType === 'redirect'
+        ? redirectResponse(options.successRedirectPath)
+        : jsonResponse(200, { submissionId: null })
+    }
+
     const submission = options.normalizeSubmission(body)
 
     if (!submission) {
       return submissionErrorResponse(parsedSubmission.responseType, options)
+    }
+
+    const turnstileToken = body['cf-turnstile-response']
+
+    if (typeof turnstileToken !== 'string' || !turnstileToken) {
+      return submissionErrorResponse(
+        parsedSubmission.responseType,
+        options,
+        403
+      )
+    }
+
+    let passedBotCheck
+
+    try {
+      passedBotCheck = await verifyBotCheck(
+        turnstileToken,
+        getHeader(event.headers, 'x-nf-client-connection-ip')
+      )
+    } catch (error) {
+      console.error('Turnstile check unavailable')
+      return submissionErrorResponse(
+        parsedSubmission.responseType,
+        options,
+        502
+      )
+    }
+
+    if (!passedBotCheck) {
+      return submissionErrorResponse(
+        parsedSubmission.responseType,
+        options,
+        403
+      )
     }
 
     return allocateId().catch(() => {
